@@ -84,4 +84,192 @@ const eliminarProducto = async (req, res) => {
 
 
 
-export {mostarProductos, regproducto, eliminarProducto};
+const registrarMovimientos = async (req, res) => {
+    const { movimientos } = req.body;
+    
+    if (!movimientos || !Array.isArray(movimientos) || movimientos.length === 0) {
+        return error(req, res, 400, "Debe proporcionar al menos un movimiento");
+    }
+
+    try {
+        const resultados = [];
+        
+        for (const movimiento of movimientos) {
+            const {
+                id_producto,
+                id_bodega_origen,
+                id_bodega_destino,
+                usuario_responsable,
+                tipo_movimiento,
+                observaciones
+            } = movimiento;
+            
+            if (!id_producto || !id_bodega_origen || !id_bodega_destino || !usuario_responsable || !tipo_movimiento) {
+                resultados.push({
+                    id_producto,
+                    success: false,
+                    message: 'Faltan campos requeridos'
+                });
+                continue;
+            }
+            
+            if (id_bodega_origen === id_bodega_destino) {
+                resultados.push({
+                    id_producto,
+                    success: false,
+                    message: 'La bodega de origen y destino no pueden ser iguales'
+                });
+                continue;
+            }
+            
+            try {
+                await pool.query(
+                    'CALL SP_REGISTRAR_MOVIMIENTO(?, ?, ?, ?, ?, ?)',
+                    [
+                        id_producto,
+                        id_bodega_origen,
+                        id_bodega_destino,
+                        usuario_responsable,
+                        tipo_movimiento,
+                        observaciones || ''
+                    ]
+                );
+                
+                resultados.push({
+                    id_producto,
+                    success: true,
+                    message: 'Movimiento registrado correctamente'
+                });
+            } catch (err) {
+                console.error(`Error al procesar movimiento para producto ${id_producto}:`, err);
+                resultados.push({
+                    id_producto,
+                    success: false,
+                    message: err.message || 'Error al registrar el movimiento'
+                });
+            }
+        }
+        
+        const todosExitosos = resultados.every(resultado => resultado.success);
+        const algunosExitosos = resultados.some(resultado => resultado.success);
+        
+        if (todosExitosos) {
+            success(req, res, 200, {
+                message: 'Todos los movimientos se registraron correctamente',
+                data: resultados
+            });
+        } else if (algunosExitosos) {
+            success(req, res, 207, {
+                message: 'Algunos movimientos se registraron correctamente',
+                data: resultados
+            });
+        } else {
+            error(req, res, 400, {
+                message: 'No se pudo registrar ningún movimiento',
+                data: resultados
+            });
+        }
+    } catch (err) {
+        console.error('Error en registrarMovimientos:', err);
+        error(req, res, 500, "Error interno del servidor al registrar movimientos");
+    }
+};
+
+const obtenerHistorialMovimientos = async (req, res) => {
+    try {
+        const { id_producto, fecha_inicio, fecha_fin, id_bodega, tipo_movimiento } = req.query;
+        
+        let query = `
+            SELECT 
+                m.id_movimiento,
+                m.id_producto,
+                p.codigo as codigo_producto,
+                bo.nombre as bodega_origen,
+                bd.nombre as bodega_destino,
+                u.nombre as usuario_responsable,
+                m.tipo_movimiento,
+                m.observaciones,
+                m.fecha_movimiento
+            FROM movimientos m
+            JOIN productos p ON m.id_producto = p.id_producto
+            JOIN bodegas bo ON m.id_bodega_origen = bo.id_bodega
+            JOIN bodegas bd ON m.id_bodega_destino = bd.id_bodega
+            JOIN usuarios u ON m.usuario_responsable = u.id_usuario
+            WHERE 1=1
+        `;
+        
+        const params = [];
+        
+        if (id_producto) {
+            query += ' AND m.id_producto = ?';
+            params.push(id_producto);
+        }
+        
+        if (fecha_inicio) {
+            query += ' AND DATE(m.fecha_movimiento) >= ?';
+            params.push(fecha_inicio);
+        }
+        
+        if (fecha_fin) {
+            query += ' AND DATE(m.fecha_movimiento) <= ?';
+            params.push(fecha_fin);
+        }
+        
+        if (id_bodega) {
+            query += ' AND (m.id_bodega_origen = ? OR m.id_bodega_destino = ?)';
+            params.push(id_bodega, id_bodega);
+        }
+        
+        if (tipo_movimiento) {
+            query += ' AND m.tipo_movimiento = ?';
+            params.push(tipo_movimiento);
+        }
+        
+        query += ' ORDER BY m.fecha_movimiento DESC';
+        
+        const [respuesta] = await pool.query(query, params);
+        success(req, res, 200, respuesta);
+        
+    } catch (err) {
+        console.error('Error en obtenerHistorialMovimientos:', err);
+        error(req, res, 500, "Error al obtener el historial de movimientos");
+    }
+};
+
+const obtenerMovimientosPorProducto = async (req, res) => {
+    try {
+        const { id_producto } = req.params;
+        
+        if (!id_producto) {
+            return error(req, res, 400, "ID del producto es requerido");
+        }
+        
+        const query = `
+            SELECT 
+                m.id_movimiento,
+                bo.nombre as bodega_origen,
+                bd.nombre as bodega_destino,
+                u.nombre as usuario_responsable,
+                m.tipo_movimiento,
+                m.observaciones,
+                m.fecha_movimiento
+            FROM movimientos m
+            JOIN bodegas bo ON m.id_bodega_origen = bo.id_bodega
+            JOIN bodegas bd ON m.id_bodega_destino = bd.id_bodega
+            JOIN usuarios u ON m.usuario_responsable = u.id_usuario
+            WHERE m.id_producto = ?
+            ORDER BY m.fecha_movimiento DESC
+        `;
+        
+        const [respuesta] = await pool.query(query, [id_producto]);
+        success(req, res, 200, respuesta);
+        
+    } catch (err) {
+        console.error('Error en obtenerMovimientosPorProducto:', err);
+        error(req, res, 500, "Error al obtener los movimientos del producto");
+    }
+};
+
+
+
+export {mostarProductos, regproducto, eliminarProducto, registrarMovimientos, obtenerHistorialMovimientos, obtenerMovimientosPorProducto};
