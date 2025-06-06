@@ -8,7 +8,7 @@ rutaProducto.get("/producto", mostarProductos);
 rutaProducto.post("/producto", regproducto);
 rutaProducto.delete("/producto", eliminarProducto);
 rutaProducto.post("/registrar", registrarMovimientos);
-rutaProducto.get("/histprial", obtenerHistorialMovimientos);
+rutaProducto.get("/historial", obtenerHistorialMovimientos);
 rutaProducto.get("/movimientos/:id_producto", obtenerHistorialMovimientos);
 
 
