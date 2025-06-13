@@ -104,12 +104,15 @@ const registrarMovimientos = async (req, res) => {
                 observaciones
             } = movimiento;
             
+            console.log('Procesando movimiento:', { id_producto, id_bodega_origen, id_bodega_destino, usuario_responsable, tipo_movimiento, observaciones }); // Detailed log
+            
             if (!id_producto || !id_bodega_origen || !id_bodega_destino || !usuario_responsable || !tipo_movimiento) {
                 resultados.push({
                     id_producto,
                     success: false,
                     message: 'Faltan campos requeridos'
                 });
+                console.log(`Movimiento rechazado: Faltan campos requeridos para id_producto ${id_producto}`);
                 continue;
             }
             
@@ -119,6 +122,7 @@ const registrarMovimientos = async (req, res) => {
                     success: false,
                     message: 'La bodega de origen y destino no pueden ser iguales'
                 });
+                console.log(`Movimiento rechazado: Bodegas iguales para id_producto ${id_producto}`);
                 continue;
             }
             
@@ -140,6 +144,7 @@ const registrarMovimientos = async (req, res) => {
                     success: true,
                     message: 'Movimiento registrado correctamente'
                 });
+                console.log(`Movimiento exitoso para id_producto ${id_producto}`);
             } catch (err) {
                 console.error(`Error al procesar movimiento para producto ${id_producto}:`, err);
                 resultados.push({
@@ -180,23 +185,11 @@ const obtenerHistorialMovimientos = async (req, res) => {
         const { fecha_inicio, fecha_fin } = req.query;
 
         const params = [];
-        let callParams = [];
+        let query = 'CALL SP_MOSTRAR_MOVIMIENTOS(?, ?)';
 
-        if (fecha_inicio) {
-            params.push(fecha_inicio);
-            callParams.push('?');
-        } else {
-            callParams.push('NULL');
-        }
+        params.push(fecha_inicio || null);
+        params.push(fecha_fin || null);
 
-        if (fecha_fin) {
-            params.push(fecha_fin);
-            callParams.push('?');
-        } else {
-            callParams.push('NULL');
-        }
-
-        const query = `CALL SP_MOSTRAR_MOVIMIENTOS(${callParams.join(', ')})`;
         const [respuesta] = await pool.query(query, params);
 
         success(req, res, 200, respuesta[0]);
