@@ -18,4 +18,22 @@ const mostrarHistorial = async (req, res) => {
     }
 };
 
-export { mostrarHistorial };
+const mostrarHistorialEnviado = async (req, res) => {
+    const { fecha_inicio, fecha_fin } = req.query;
+
+    // console.log('Ejecutando mostrarHistorialEnviado con parámetros:', { fecha_inicio, fecha_fin }); // Debug log
+
+    try {
+        const [respuesta] = await pool.query(`CALL SP_MOSTRAR_HISTORIAL_ENVIADO(?, ?);`, [
+            fecha_inicio || null,
+            fecha_fin || null
+        ]);
+        // console.log('Resultado de la consulta:', respuesta[0]); // Debug log
+        success(req, res, 200, respuesta[0]);
+    } catch (err) {
+        console.error('Error en mostrarHistorialEnviado:', err);
+        error(req, res, 500, err);
+    }
+};
+
+export { mostrarHistorial, mostrarHistorialEnviado };

@@ -640,7 +640,7 @@ INSERT INTO `usuarios` (`id_usuario`, `nombre`, `contrasena`, `descripcion`, `bo
 (3, 'juan', '$2b$10$we8t24H9Lnl6Rb6W05Gl6Oc2tN37UvAq0Kll7AjQdyyB25KJKl38q', 'operario de corte', 'Corte', 'Supervisor', '1', '2025-03-17 11:54:48'),
 (6, 'pepito', '$2b$10$x0LQT05ORU7H7IiXA551U.AcUvwStbAfMdSrmQhPf1vWkpPbdbmzm', 'operario de montaje', 'Montaje', 'Operario', '1', '2025-04-01 14:30:21'),
 (8, 'gofy', '$2b$10$mgUTg1Kt8GrKHrElKyM5sOz2dzBN7ROhas49Sv6WVhrzcGCeeHDT.', 'supervisor de montaje', 'Montaje', 'Supervisor', '1', '2025-06-06 07:55:34'),
-(18, 'elgar', '$2b$10$eWInpYCJYjZ6bFwDNPyYc.Bhb4a79KTcFPDEKhk8oyeX7v5yeo5F6', 'usuario que se comparte tanto el supervisor de inyección y el operario de inyección ', 'Inyección', 'Operario de Inyeccion', '2', '2025-06-06 13:32:30'),
+(18, 'elgar', '$2b$10$eWInpYCJYjZ6bFwDNPyYc.Bhb4a79KTcFPDEKhk8oyeX7v5yeo5F6', 'usuario que se comparte tanto el supervisor de Inyeccion y el operario de Inyeccion ', 'Inyeccion', 'Operario de Inyeccion', '2', '2025-06-06 13:32:30'),
 (19, 'pepe', '$2b$10$fCzkpfRdfI7yWKAWuZ8xZeUDS3kWpxdGRWbs0ju.apQI7xdCtghUC', 'sfsf', 'Terminada', 'Supervisor', '2', '2025-06-06 14:57:34'),
 (20, 'gian', '$2b$10$ybarYllVirI24oCu2YahXOdl1B2f9PojYzf.WU2fREqu9rBoZ/6AS', 'logistica', 'Logistica', 'Supervisor', '2', '2025-06-10 14:46:48');
 

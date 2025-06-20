@@ -199,40 +199,74 @@ const obtenerHistorialMovimientos = async (req, res) => {
     }
 };
 
-const obtenerMovimientosPorProducto = async (req, res) => {
+
+const actualizarProducto = async (req, res) => {
+    const { id_producto, codigo, cantidad, talla } = req.body;
+
+    if (!id_producto || !codigo || cantidad === undefined ) {
+        return error(req, res, 400, "Faltan parámetros requeridos: id_producto, codigo o cantidad");
+    }
+
     try {
-        const { id_producto } = req.params;
-        
-        if (!id_producto) {
-            return error(req, res, 400, "ID del producto es requerido");
-        }
-        
-        const query = `
-            SELECT 
-                m.id_movimiento,
-                bo.nombre as bodega_origen,
-                bd.nombre as bodega_destino,
-                u.nombre as usuario_responsable,
-                m.tipo_movimiento,
-                m.observaciones,
-                m.fecha_movimiento
-            FROM movimientos m
-            JOIN bodegas bo ON m.id_bodega_origen = bo.id_bodega
-            JOIN bodegas bd ON m.id_bodega_destino = bd.id_bodega
-            JOIN usuarios u ON m.usuario_responsable = u.id_usuario
-            WHERE m.id_producto = ?
-            ORDER BY m.fecha_movimiento DESC
-        `;
-        
-        const [respuesta] = await pool.query(query, [id_producto]);
-        success(req, res, 200, respuesta);
-        
+        console.log('Recibidos en el servidor:', { id_producto, codigo, cantidad, talla });
+        await pool.query(`CALL SP_ACTUALIZAR_PRODUCTO(?, ?, ?, ?)`, [
+            id_producto,
+            codigo,
+            parseInt(cantidad), 
+            talla || null // Si no se proporciona la talla envía como null
+        ]);
+        console.log('Producto actualizado en la base de datos');
+        success(req, res, 200, "Producto actualizado correctamente");
     } catch (err) {
-        console.error('Error en obtenerMovimientosPorProducto:', err);
-        error(req, res, 500, "Error al obtener los movimientos del producto");
+        console.error('Error en actualizarProducto:', err);
+        error(req, res, 500, "Error al actualizar el producto: " + err.message);
     }
 };
 
 
+export {mostarProductos, regproducto, eliminarProducto, registrarMovimientos, obtenerHistorialMovimientos, actualizarProducto};
 
-export {mostarProductos, regproducto, eliminarProducto, registrarMovimientos, obtenerHistorialMovimientos, obtenerMovimientosPorProducto};
+
+
+
+
+
+
+// controlador de movimientos de pruebas ya se tiene un controlador para mostrar los movimientos 
+// ya se organizo el controlador de movimientos para que muestre los movimientos por producto
+// y este es ek controlador de purbas que estaba duplicado
+
+// const obtenerMovimientosPorProducto = async (req, res) => {
+//     try {
+//         const { id_producto } = req.params;
+        
+//         if (!id_producto) {
+//             return error(req, res, 400, "ID del producto es requerido");
+//         }
+        
+//         const query = `
+//             SELECT 
+//                 m.id_movimiento,
+//                 bo.nombre as bodega_origen,
+//                 bd.nombre as bodega_destino,
+//                 u.nombre as usuario_responsable,
+//                 m.tipo_movimiento,
+//                 m.observaciones,
+//                 m.fecha_movimiento
+//             FROM movimientos m
+//             JOIN bodegas bo ON m.id_bodega_origen = bo.id_bodega
+//             JOIN bodegas bd ON m.id_bodega_destino = bd.id_bodega
+//             JOIN usuarios u ON m.usuario_responsable = u.id_usuario
+//             WHERE m.id_producto = ?
+//             ORDER BY m.fecha_movimiento DESC
+//         `;
+        
+//         const [respuesta] = await pool.query(query, [id_producto]);
+//         success(req, res, 200, respuesta);
+        
+//     } catch (err) {
+//         console.error('Error en obtenerMovimientosPorProducto:', err);
+//         error(req, res, 500, "Error al obtener los movimientos del producto");
+//     }
+// };
+// , obtenerMovimientosPorProducto

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { eliminarProducto, mostarProductos, obtenerHistorialMovimientos, registrarMovimientos, regproducto } from "../controllers/controller.producto";
+import { actualizarProducto, eliminarProducto, mostarProductos, obtenerHistorialMovimientos, registrarMovimientos, regproducto } from "../controllers/controller.producto";
 
 
 const rutaProducto = Router();
@@ -10,6 +10,7 @@ rutaProducto.delete("/producto", eliminarProducto);
 rutaProducto.post("/registrar", registrarMovimientos);
 rutaProducto.get("/historial", obtenerHistorialMovimientos);
 rutaProducto.get("/movimientos/:id_producto", obtenerHistorialMovimientos);
+rutaProducto.put("/actualizar", actualizarProducto);
 
 
 export default rutaProducto;
