@@ -1,13 +1,7 @@
 import { Router } from 'express';
-import { crear, crearBodega, eliminar, eliminarBodega, modificar, modificarBodega, mostrar, mostrarBodegas } from '../controllers/controller.bodega';
-import ruta from '.';
+import { crear, eliminar, modificar,mostrar } from '../controllers/controller.bodega';
 
 const rutaBodega = Router();
-
-rutaBodega.get("/bodega", mostrarBodegas);
-rutaBodega.post("/bodega", crearBodega);
-rutaBodega.put("/bodega", modificarBodega);
-rutaBodega.delete("/bodega", eliminarBodega);
 
 
 // rutas de la base de datos betrost

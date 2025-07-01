@@ -1,17 +1,10 @@
 import { Router } from 'express';
-import { crearUsuario, eliminar, eliminarUsuario, insertarusuario, login, loginusuario, modificar, modificarUsuario, mostar, mostarUsuarios } from '../controllers/controller.usuario';
+import { eliminar, insertarusuario, login, modificar, mostar, } from '../controllers/controller.usuario';
 import { verifyToken } from '../middleware/oauth';
 
 
 
 const rutausaurio = Router();
-
-
-rutausaurio.get("/usuario" ,mostarUsuarios);
-rutausaurio.post("/usuario", crearUsuario);
-rutausaurio.put("/usuario" ,modificarUsuario);
-rutausaurio.delete("/usuario" ,eliminarUsuario);
-rutausaurio.post("/login", loginusuario);
 
 
 // rutas de la base de datos betrost
