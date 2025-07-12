@@ -5,23 +5,31 @@ config();
 
 
 const consultar_inventario = async (req, res) => {
-    const { id_bodega } = req.body;
+    const { nombre_bodega } = req.query;
 
-    // Validar que id_bodega sea un número entero positivo
-    if (!id_bodega || isNaN(id_bodega) || id_bodega <= 0) {
-        return error(req, res, 400, 'El ID de la bodega debe ser un número entero positivo');
+    if (!nombre_bodega || typeof nombre_bodega !== 'string') {
+        return error(req, res, 400, 'El nombre de la bodega es requerido y debe ser texto');
     }
 
     try {
-        const [respuesta] = await poolBetrost.query(`CALL sp_consultar_inventario_bodega(?);`, [id_bodega]);
-        if (respuesta.length > 0) {
-            success(req, res, 200, respuesta);
+        const [respuesta] = await poolBetrost.query(
+            `CALL sp_consultar_inventario_bodega(?);`,
+            [nombre_bodega.trim()]
+        );
+
+        // Si no hay inventario pero sí mensaje de error del SP
+        if (respuesta[0]?.mensaje === 'Bodega no encontrada') {
+            return error(req, res, 404, 'No se encontró la bodega especificada');
+        }
+
+        if (respuesta[0]?.length > 0) {
+            return success(req, res, 200, respuesta[0]);
         } else {
-            error(req, res, 404, 'No se encontraron productos en el inventario');
+            return error(req, res, 404, 'No se encontraron productos en el inventario');
         }
     } catch (error) {
         console.error('Error al consultar el inventario:', error);
-        error(req, res, 500, 'Error interno del servidor al consultar el inventario');
+        return error(req, res, 500, 'Error interno del servidor al consultar el inventario');
     }
 };
 
@@ -91,42 +99,52 @@ const isValidDate = (dateString) => {
 
 
 const iniciar_sesion_escaneo = async (req, res) => {
-    const { id_bodega, id_usuario, observaciones } = req.body;
+  const { id_bodega, nombre_usuario, observaciones } = req.body;
 
-    // Validar parámetros de entrada
-    if (!id_bodega || isNaN(id_bodega) || id_bodega <= 0) {
-        return error(req, res, 400, 'El ID de la bodega debe ser un número entero positivo');
+  if (!id_bodega || isNaN(id_bodega) || id_bodega <= 0) {
+    return error(req, res, 400, 'El ID de la bodega debe ser un número entero positivo');
+  }
+
+  if (!nombre_usuario || typeof nombre_usuario !== 'string') {
+    return error(req, res, 400, 'El nombre del usuario es requerido y debe ser texto');
+  }
+
+  try {
+    // 1. Buscar el ID del usuario por nombre
+    const [usuarios] = await poolBetrost.query(
+      `SELECT id_usuario FROM usuarios WHERE nombre = ? LIMIT 1`,
+      [nombre_usuario.trim()]
+    );
+
+    if (usuarios.length === 0) {
+      return error(req, res, 404, 'Usuario no encontrado con ese nombre');
     }
-    if (!id_usuario || isNaN(id_usuario) || id_usuario <= 0) {
-        return error(req, res, 400, 'El ID del usuario debe ser un número entero positivo');
+
+    const id_usuario = usuarios[0].id_usuario;
+
+    // 2. Llamar al procedimiento almacenado con el ID encontrado
+    await poolBetrost.query(
+      `CALL sp_iniciar_sesion_escaneo(?, ?, ?, @p_id_sesion, @p_mensaje);`,
+      [parseInt(id_bodega), id_usuario, observaciones || null]
+    );
+
+    const [output] = await poolBetrost.query(
+      `SELECT @p_id_sesion AS id_sesion, @p_mensaje AS mensaje`
+    );
+
+    const { id_sesion, mensaje } = output[0];
+
+    if (id_sesion > 0) {
+      return success(req, res, 200, { id_sesion, mensaje });
+    } else {
+      return error(req, res, 400, mensaje);
     }
-    if (observaciones && typeof observaciones !== 'string') {
-        return error(req, res, 400, 'Las observaciones deben ser una cadena de texto');
-    }
-
-    try {
-        const [result] = await poolBetrost.query(
-            `CALL sp_iniciar_sesion_escaneo(?, ?, ?, @p_id_sesion, @p_mensaje);`,
-            [parseInt(id_bodega), parseInt(id_usuario), observaciones || null]
-        );
-
-        // Obtener los parámetros de salida
-        const [output] = await poolBetrost.query(
-            `SELECT @p_id_sesion AS id_sesion, @p_mensaje AS mensaje`
-        );
-
-        const { id_sesion, mensaje } = output[0];
-
-        if (id_sesion > 0) {
-            success(req, res, 200, { id_sesion, mensaje });
-        } else {
-            error(req, res, 400, mensaje);
-        }
-    } catch (error) {
-        console.error('Error al iniciar sesión de escaneo:', error);
-        error(req, res, 500, 'Error interno del servidor al iniciar sesión de escaneo');
-    }
+  } catch (err) {
+    console.error('Error al iniciar sesión de escaneo:', err);
+    return error(req, res, 500, 'Error interno del servidor al iniciar sesión de escaneo');
+  }
 };
+
 
 const agregar_producto_sesion = async (req, res) => {
     const { id_sesion, codigo_producto, cantidad } = req.body;
@@ -242,13 +260,9 @@ const finalizarSesionEscaneo = async (req, res) => {
     const connection = await poolBetrost.getConnection();
 
     try {
-      // Declarar la variable de salida
-      const [_, result] = await connection.query(`
-        CALL sp_finalizar_sesion_escaneo(?, @mensaje);
-        SELECT @mensaje AS mensaje;
-      `, [id_sesion]);
+      await connection.query(`CALL sp_finalizar_sesion_escaneo(?, @mensaje);`, [id_sesion]);
 
-      const mensaje = result[1][0].mensaje;
+      const [[{ mensaje }]] = await connection.query(`SELECT @mensaje AS mensaje;`);
 
       res.status(200).json({ mensaje });
     } finally {
@@ -341,6 +355,38 @@ const ajustarInventario = async (req, res) => {
   }
 };
 
+const crear_producto = async (req, res) => {
+    let { codigo, caracteristica } = req.body;
+
+    // Validar el código
+    if (!codigo || typeof codigo !== 'string' || codigo.trim() === '') {
+        return error(req, res, 400, 'El código es obligatorio y debe ser texto.');
+    }
+
+    // Si no hay caracteristica, usar "N/A" por defecto
+    if (!caracteristica || typeof caracteristica !== 'string' || caracteristica.trim() === '') {
+        caracteristica = "N/A";
+    }
+
+    try {
+        await poolBetrost.query(
+            `CALL sp_crear_producto(?, ?)`,
+            [codigo.trim(), caracteristica.trim()]
+        );
+
+        success(req, res, 200, { mensaje: 'Producto creado correctamente.' });
+
+    } catch (err) {
+        console.error('Error al crear producto:', err);
+
+        if (err.errno === 1062) {
+            return error(req, res, 400, 'El código ya está registrado o está inactivo.');
+        }
+
+        error(req, res, 500, 'Error interno del servidor al crear el producto.');
+    }
+};
+
 export {
     consultar_inventario,
     consultar_movimientos,
@@ -351,5 +397,6 @@ export {
     cancelar_sesion_escaneo,
     finalizarSesionEscaneo,
     transferirProducto,
-    ajustarInventario
+    ajustarInventario,
+    crear_producto
 }

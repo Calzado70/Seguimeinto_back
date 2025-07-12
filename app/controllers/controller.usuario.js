@@ -19,6 +19,20 @@ const mostar = async (req, res) => {
     }
 };
 
+const obtenerUsuarioPorId = async (req, res) => {
+  const { id_usuario } = req.body;
+
+  try {
+    const rows = await poolBetrost.query(`CALL sp_mostrar_usuario_id(?);`,
+      [id_usuario]
+    );
+    success(req, res, 200, rows[0][0]);
+  } catch (error) {
+    console.error("Error al buscar usuario:", error);
+    error(req, res, 500, "Error al buscar usuario");
+    }
+};
+
 
 const eliminar = async (req, res) => {
     const {id_usuario} = req.body;
@@ -154,4 +168,6 @@ export {
     login, 
     modificar,
     eliminar,
-    mostar};
+    mostar,
+    obtenerUsuarioPorId
+};
