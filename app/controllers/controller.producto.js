@@ -281,11 +281,11 @@ const transferirProducto = async (req, res) => {
     codigo_producto,
     cantidad,
     id_usuario,
-    observaciones
+    observaciones,
+    tipo_movimiento // Nuevo
   } = req.body;
 
-  // Validación básica
-  if (!id_bodega_origen || !id_bodega_destino || !codigo_producto || !cantidad || !id_usuario) {
+  if (!id_bodega_origen || !id_bodega_destino || !codigo_producto || !cantidad || !id_usuario || !tipo_movimiento) {
     return res.status(400).json({ error: 'Faltan campos requeridos para la transferencia' });
   }
 
@@ -293,7 +293,7 @@ const transferirProducto = async (req, res) => {
     const connection = await poolBetrost.getConnection();
     try {
       const [_, result] = await connection.query(`
-        CALL sp_transferir_productos(?, ?, ?, ?, ?, ?, @mensaje);
+        CALL sp_transferir_productos(?, ?, ?, ?, ?, ?, ?, @mensaje);
         SELECT @mensaje AS mensaje;
       `, [
         id_bodega_origen,
@@ -301,18 +301,18 @@ const transferirProducto = async (req, res) => {
         codigo_producto,
         cantidad,
         id_usuario,
-        observaciones || '' // Por si viene null
+        observaciones || '',
+        tipo_movimiento // Nuevo parámetro
       ]);
 
       const mensaje = result[1][0].mensaje;
-
-      res.status(200).json({ mensaje });
+      success(req, res, 200, { mensaje }, "PRODUCTO TRANSFERIDO EXITOSAMENTE");
     } finally {
       connection.release();
     }
   } catch (error) {
     console.error('Error al transferir producto:', error);
-    res.status(500).json({ error: 'Error interno al realizar la transferencia' });
+    error(req, res, 500, 'Error interno al transferir producto');
   }
 };
 

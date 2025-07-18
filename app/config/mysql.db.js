@@ -19,6 +19,7 @@ const poolBetrost = createPool({
     password: process.env.MYSQL_PASSWORD,
     port: process.env.MYSQL_PORT,
     database: process.env.MYSQL_DATABASE_BETROST,
+    multipleStatements: true,
 });
 
 
