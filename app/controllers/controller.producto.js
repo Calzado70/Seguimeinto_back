@@ -393,7 +393,7 @@ const transferirProducto = async (req, res) => {
     cantidad,
     id_usuario,
     observaciones,
-    tipo_movimiento, // Nuevo
+    tipo_movimiento,
   } = req.body;
 
   if (
@@ -411,6 +411,9 @@ const transferirProducto = async (req, res) => {
 
   try {
     const connection = await poolBetrost.getConnection();
+    console.log("➡️ Body recibido:", req.body);
+    console.log("➡️ id_usuario:", id_usuario);
+    
     try {
       const [results] = await connection.query(
         `CALL sp_transferir_productos(?, ?, ?, ?, ?, ?, ?, @mensaje);`,
@@ -424,18 +427,40 @@ const transferirProducto = async (req, res) => {
           tipo_movimiento,
         ]
       );
+      
       console.log("👉 Debug del procedimiento:", results);
+      
       const [mensajeResult] = await connection.query(
         `SELECT @mensaje AS mensaje;`
       );
+      
       const mensaje = mensajeResult[0].mensaje;
+      console.log("📝 Mensaje del SP:", mensaje);
+      
+      // ✅ VERIFICAR SI HAY ERRORES Y DEVOLVER SOLO EL ERROR
+      if (mensaje.includes('Stock insuficiente')) {
+        return res.status(400).json({ 
+          error: mensaje 
+        });
+      }
+      
+      if (mensaje.includes('Error') || 
+          mensaje.includes('no existe') || 
+          mensaje.includes('no encontrado')) {
+        return res.status(400).json({ 
+          error: mensaje 
+        });
+      }
+      
+      // Solo si es exitoso
       success(req, res, 200, { mensaje }, "PRODUCTO TRANSFERIDO EXITOSAMENTE");
+      
     } finally {
       connection.release();
     }
   } catch (error) {
     console.error("Error al transferir producto:", error);
-    error(req, res, 500, "Error interno al transferir producto" );
+    error(req, res, 500, "Error interno al transferir producto");
   }
 };
 
@@ -514,6 +539,38 @@ const crear_producto = async (req, res) => {
   }
 };
 
+
+const actualizarCaracteristica = async (req, res) => {
+  const { codigo_producto, nueva_caracteristica } = req.body;
+
+  if (!codigo_producto || !nueva_caracteristica) {
+    return res.status(400).json({ error: "Faltan datos" });
+  }
+
+  try {
+    const connection = await poolBetrost.getConnection();
+    try {
+      const [result] = await connection.query(
+        `CALL sp_actualizar_caracteristica_producto(?, ?, @mensaje);`,
+        [codigo_producto, nueva_caracteristica]
+      );
+
+      const [mensajeResult] = await connection.query(`SELECT @mensaje AS mensaje;`);
+      const mensaje = mensajeResult[0].mensaje;
+
+      res.status(200).json({ mensaje });
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error("Error al actualizar característica:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+};
+
+
+
+
 export {
   consultar_inventario,
   consultar_movimientos,
@@ -526,4 +583,5 @@ export {
   transferirProducto,
   ajustarInventario,
   crear_producto,
+  actualizarCaracteristica,
 };
