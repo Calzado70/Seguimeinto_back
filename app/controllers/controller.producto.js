@@ -6,22 +6,12 @@ config();
 const consultar_inventario = async (req, res) => {
   const { nombre_bodega } = req.query;
 
-  if (!nombre_bodega || typeof nombre_bodega !== "string") {
-    return error(
-      req,
-      res,
-      400,
-      "El nombre de la bodega es requerido y debe ser texto"
-    );
-  }
-
   try {
     const [respuesta] = await poolBetrost.query(
       `CALL sp_consultar_inventario_bodega(?);`,
-      [nombre_bodega.trim()]
+      [nombre_bodega ? nombre_bodega.trim() : null]
     );
 
-    // Si no hay inventario pero sí mensaje de error del SP
     if (respuesta[0]?.mensaje === "Bodega no encontrada") {
       return error(req, res, 404, "No se encontró la bodega especificada");
     }
@@ -91,64 +81,46 @@ const consultar_stock = async (req, res) => {
 };
 
 const consultar_movimientos = async (req, res) => {
-  const { id_bodega, fecha_inicio, fecha_fin } = req.body;
-
-  // Validar parámetros de entrada
-  if (!id_bodega || isNaN(id_bodega) || id_bodega <= 0) {
-    return error(
-      req,
-      res,
-      400,
-      "El ID de la bodega debe ser un número entero positivo"
-    );
-  }
-  if (!fecha_inicio || !fecha_fin) {
-    return error(req, res, 400, "Las fechas de inicio y fin son obligatorias");
-  }
-  if (!isValidDate(fecha_inicio) || !isValidDate(fecha_fin)) {
-    return error(
-      req,
-      res,
-      400,
-      "Las fechas deben tener un formato válido (YYYY-MM-DD)"
-    );
-  }
-  if (new Date(fecha_inicio) > new Date(fecha_fin)) {
-    return error(
-      req,
-      res,
-      400,
-      "La fecha de inicio no puede ser mayor que la fecha de fin"
-    );
-  }
+  const { id_bodega, fecha_inicio, fecha_fin } = req.query;
 
   try {
     const [respuesta] = await poolBetrost.query(
       `CALL sp_consultar_movimientos(?, ?, ?);`,
-      [parseInt(id_bodega), fecha_inicio, fecha_fin]
+      [
+        id_bodega ? parseInt(id_bodega) : null,
+        fecha_inicio || null,
+        fecha_fin || null
+      ]
     );
+
     if (respuesta[0] && respuesta[0].length > 0) {
-      success(req, res, 200, respuesta[0]);
+      return success(req, res, 200, respuesta[0]);
     } else {
-      error(
-        req,
-        res,
-        404,
-        "No se encontraron movimientos para los criterios especificados"
-      );
+      return error(req, res, 404, "No se encontraron movimientos");
     }
   } catch (error) {
-    console.error("Error al consultar movimientos:", error);
-    error(req, res, 500, "Error interno del servidor al consultar movimientos");
+    console.error("Error al consultar los movimientos:", error);
+    return error(
+      req,
+      res,
+      500,
+      "Error interno del servidor al consultar los movimientos"
+    );
   }
 };
 
-// Función auxiliar para validar formato de fecha
+
+
 const isValidDate = (dateString) => {
   const regex = /^\d{4}-\d{2}-\d{2}$/;
   if (!regex.test(dateString)) return false;
+  
   const date = new Date(dateString);
-  return date instanceof Date && !isNaN(date);
+  const timestamp = date.getTime();
+  
+  if (typeof timestamp !== 'number' || Number.isNaN(timestamp)) return false;
+  
+  return dateString === date.toISOString().split('T')[0];
 };
 
 const iniciar_sesion_escaneo = async (req, res) => {
