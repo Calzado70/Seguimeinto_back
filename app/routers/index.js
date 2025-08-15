@@ -11,7 +11,7 @@ const ruta = Router();
 ruta.use("/user", rutausaurio);
 ruta.use("/bode", rutaBodega);
 ruta.use("/product", rutaProducto);
-// ruta.use("/api", rutaHistorial);
+ruta.use("/hist", rutaHistorial);
 
 
 ruta.use("/", (req, res) => {res.json({"respuesta": messageBrowse.principal})});
