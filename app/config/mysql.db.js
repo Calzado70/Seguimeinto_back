@@ -20,6 +20,7 @@ const poolBetrost = createPool({
     port: process.env.MYSQL_PORT,
     database: process.env.MYSQL_DATABASE_BETROST,
     multipleStatements: true,
+    charset: 'utf8mb4_general_ci' // Soporte para emojis y caracteres especiales
 });
 
 
