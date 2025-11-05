@@ -186,6 +186,7 @@ const iniciar_sesion_escaneo = async (req, res) => {
 };
 
 const agregar_producto_sesion = async (req, res) => {
+  console.log("📦 Body recibido en /product/agregar:", req.body);
   const { id_sesion, codigo_producto, cantidad } = req.body;
 
   // Validate input parameters
