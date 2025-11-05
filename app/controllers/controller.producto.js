@@ -230,6 +230,8 @@ const agregar_producto_sesion = async (req, res) => {
 
     const { mensaje } = output[0];
 
+    console.log("🧩 Mensaje devuelto por el SP:", mensaje);
+
     if (mensaje === "Producto agregado correctamente") {
       success(req, res, 200, { mensaje });
     } else {
