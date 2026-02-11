@@ -81,15 +81,16 @@ const consultar_stock = async (req, res) => {
 };
 
 const consultar_movimientos = async (req, res) => {
-  const { id_bodega, fecha_inicio, fecha_fin } = req.query;
+  const { id_bodega, fecha_inicio, fecha_fin, codigo_inteligente } = req.query;
 
   try {
     const [respuesta] = await poolBetrost.query(
-      `CALL sp_consultar_movimientos(?, ?, ?);`,
+      `CALL sp_consultar_movimientos(?, ?, ?, ?);`,
       [
         id_bodega ? parseInt(id_bodega) : null,
         fecha_inicio || null,
-        fecha_fin || null
+        fecha_fin || null,
+        codigo_inteligente || null
       ]
     );
 
@@ -98,15 +99,13 @@ const consultar_movimientos = async (req, res) => {
     } else {
       return error(req, res, 404, "No se encontraron movimientos");
     }
-  } catch (error) {
-    console.error("Error al consultar los movimientos:", error);
-    return error(
-      req,
-      res,
-      500,
-      "Error interno del servidor al consultar los movimientos"
-    );
-  }
+  } catch (err) {
+  console.error("Error al consultar los movimientos:", err);
+  return res.status(500).json({
+    ok: false,
+    message: "Error interno del servidor al consultar los movimientos"
+  });
+}
 };
 
 
@@ -132,6 +131,15 @@ const iniciar_sesion_escaneo = async (req, res) => {
       res,
       400,
       "El ID de la bodega debe ser un número entero positivo"
+    );
+  }
+
+   if (parseInt(id_bodega) !== 1) {
+    return error(
+      req,
+      res,
+      403,
+      "Solo se permite iniciar sesión de escaneo en la bodega principal"
     );
   }
 
