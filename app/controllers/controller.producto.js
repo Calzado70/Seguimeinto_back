@@ -81,7 +81,7 @@ const consultar_stock = async (req, res) => {
 };
 
 const consultar_movimientos = async (req, res) => {
-  const { id_bodega, fecha_inicio, fecha_fin, codigo_inteligente } = req.query;
+  const { id_bodega, fecha_inicio, fecha_fin, codigo_inteligente} = req.query;
 
   try {
     const [respuesta] = await poolBetrost.query(
