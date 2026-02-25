@@ -34,7 +34,7 @@
     "morgan": "^1.10.0",
     "mysql2": "^3.12.0",
     "node-cron": "^3.0.3",
-    "swagger-autogen": "^2.23.7",
+    "swagger-autogen": "^2.9.2",
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {

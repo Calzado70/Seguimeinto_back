@@ -377,6 +377,7 @@ const transferirProducto = async (req, res) => {
     id_usuario,
     observaciones,
     tipo_movimiento,
+    talleres
   } = req.body;
 
   if (
@@ -399,7 +400,7 @@ const transferirProducto = async (req, res) => {
     
     try {
       const [results] = await connection.query(
-        `CALL sp_transferir_productos(?, ?, ?, ?, ?, ?, ?, @mensaje);`,
+        `CALL sp_transferir_productos(?, ?, ?, ?, ?, ?, ?, ?, @mensaje);`,
         [
           id_bodega_origen,
           id_bodega_destino,
@@ -408,6 +409,7 @@ const transferirProducto = async (req, res) => {
           id_usuario,
           observaciones || "",
           tipo_movimiento,
+          talleres || ""
         ]
       );
       
@@ -496,7 +498,7 @@ const crear_producto = async (req, res) => {
     typeof caracteristica !== "string" ||
     caracteristica.trim() === ""
   ) {
-    caracteristica = "N/A";
+    caracteristica = "";
   }
 
   try {
