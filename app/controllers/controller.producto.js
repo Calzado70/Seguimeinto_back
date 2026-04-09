@@ -7,17 +7,24 @@ const consultar_inventario = async (req, res) => {
   const { nombre_bodega } = req.query;
 
   try {
-    const [respuesta] = await poolBetrost.query(
-      `CALL sp_consultar_inventario_bodega(?);`,
-      [nombre_bodega ? nombre_bodega.trim() : null]
-    );
 
-    if (respuesta[0]?.mensaje === "Bodega no encontrada") {
-      return error(req, res, 404, "No se encontró la bodega especificada");
+    let query = `
+      SELECT *
+      FROM vista_inventario_con_observacion
+    `;
+
+    const params = [];
+
+    // 🔍 filtro opcional por bodega
+    if (nombre_bodega) {
+      query += ` WHERE bodega = ?`;
+      params.push(nombre_bodega.trim());
     }
 
-    if (respuesta[0]?.length > 0) {
-      return success(req, res, 200, respuesta[0]);
+    const [rows] = await poolBetrost.query(query, params);
+
+    if (rows.length > 0) {
+      return success(req, res, 200, rows);
     } else {
       return error(
         req,
@@ -26,14 +33,18 @@ const consultar_inventario = async (req, res) => {
         "No se encontraron productos en el inventario"
       );
     }
-  } catch (error) {
-    console.error("Error al consultar el inventario:", error);
+
+  } catch (err) {
+
+    console.error("Error al consultar inventario:", err);
+
     return error(
       req,
       res,
       500,
-      "Error interno del servidor al consultar el inventario"
+      "Error interno del servidor"
     );
+
   }
 };
 
@@ -369,83 +380,136 @@ const finalizarSesionEscaneo = async (req, res) => {
 };
 
 const transferirProducto = async (req, res) => {
-  const {
-    id_bodega_origen,
-    id_bodega_destino,
-    codigo_producto,
-    cantidad,
-    id_usuario,
-    observaciones,
-    tipo_movimiento,
-    talleres
-  } = req.body;
-
-  if (
-    !id_bodega_origen ||
-    !id_bodega_destino ||
-    !codigo_producto ||
-    !cantidad ||
-    !id_usuario ||
-    !tipo_movimiento
-  ) {
-    return res
-      .status(400)
-      .json({ error: "Faltan campos requeridos para la transferencia" });
-  }
+  let connection;
 
   try {
-    const connection = await poolBetrost.getConnection();
-    console.log("➡️ Body recibido:", req.body);
-    console.log("➡️ id_usuario:", id_usuario);
-    
-    try {
-      const [results] = await connection.query(
-        `CALL sp_transferir_productos(?, ?, ?, ?, ?, ?, ?, ?, @mensaje);`,
-        [
-          id_bodega_origen,
-          id_bodega_destino,
-          codigo_producto,
-          cantidad,
-          id_usuario,
-          observaciones || "",
-          tipo_movimiento,
-          talleres || ""
-        ]
+    let {
+      id_bodega_origen,
+      id_bodega_destino,
+      codigo_producto,
+      cantidad,
+      id_usuario,
+      observaciones,
+      tipo_movimiento
+    } = req.body;
+
+    // =========================
+    // NORMALIZACIÓN
+    // =========================
+    id_bodega_origen = parseInt(id_bodega_origen);
+    id_bodega_destino = parseInt(id_bodega_destino);
+    cantidad = parseInt(cantidad, 0.5);
+    id_usuario = parseInt(id_usuario);
+    codigo_producto = codigo_producto?.trim();
+    observaciones = observaciones?.trim() || "";
+
+    // =========================
+    // VALIDACIONES
+    // =========================
+    if (
+      !id_bodega_origen == null ||
+      !id_bodega_destino == null ||
+      !codigo_producto  ||
+      !cantidad == null ||
+      !id_usuario == null ||
+      !tipo_movimiento
+    ) {
+      return error(
+        req,
+        res,
+        400,
+        "Faltan campos requeridos para la transferencia"
       );
-      
-      console.log("👉 Debug del procedimiento:", results);
-      
-      const [mensajeResult] = await connection.query(
-        `SELECT @mensaje AS mensaje;`
-      );
-      
-      const mensaje = mensajeResult[0].mensaje;
-      console.log("📝 Mensaje del SP:", mensaje);
-      
-      // ✅ VERIFICAR SI HAY ERRORES Y DEVOLVER SOLO EL ERROR
-      if (mensaje.includes('Stock insuficiente')) {
-        return res.status(400).json({ 
-          error: mensaje 
-        });
-      }
-      
-      if (mensaje.includes('Error') || 
-          mensaje.includes('no existe') || 
-          mensaje.includes('no encontrado')) {
-        return res.status(400).json({ 
-          error: mensaje 
-        });
-      }
-      
-      // Solo si es exitoso
-      success(req, res, 200, { mensaje }, "PRODUCTO TRANSFERIDO EXITOSAMENTE");
-      
-    } finally {
-      connection.release();
     }
-  } catch (error) {
-    console.error("Error al transferir producto:", error);
-    error(req, res, 500, "Error interno al transferir producto");
+
+    if (isNaN(id_bodega_origen) || isNaN(id_bodega_destino)) {
+      return error(req, res, 400, "Las bodegas deben ser numéricas");
+    }
+
+    if (isNaN(cantidad) || cantidad <= 0) {
+      return error(req, res, 400, "La cantidad debe ser mayor a 0");
+    }
+
+    if (id_bodega_origen === id_bodega_destino) {
+      return error(
+        req,
+        res,
+        400,
+        "La bodega origen y destino no pueden ser iguales"
+      );
+    }
+
+    const tiposValidos = ["ENTRADA", "PROCESO", "COMPLETO"];
+    if (!tiposValidos.includes(tipo_movimiento)) {
+      return error(req, res, 400, "Tipo de movimiento inválido");
+    }
+
+    // =========================
+    // CONEXIÓN
+    // =========================
+    connection = await poolBetrost.getConnection();
+    
+    // =========================
+    // LLAMAR SP
+    // =========================
+    await connection.query(
+      `CALL sp_transferir_productos(?, ?, ?, ?, ?, ?, ?, @mensaje);`,
+      [
+        id_bodega_origen,
+        id_bodega_destino,
+        codigo_producto,
+        cantidad,
+        id_usuario,
+        observaciones,
+        tipo_movimiento
+      ]
+    );
+
+    const [mensajeResult] = await connection.query(
+      `SELECT @mensaje AS mensaje;`
+    );
+
+    const mensaje = mensajeResult[0]?.mensaje || "Respuesta desconocida";
+
+    // =========================
+    // DETECTAR ERRORES DEL SP
+    // =========================
+    const esError = [
+      "stock insuficiente",
+      "error",
+      "no existe",
+      "no encontrado"
+    ].some((txt) => mensaje.toLowerCase().includes(txt));
+
+    if (esError) {
+      return error(req, res, 400, mensaje);
+    }
+
+    // =========================
+    // RESPUESTA EXITOSA
+    // =========================
+    return success(
+      req,
+      res,
+      200,
+      { mensaje },
+      "PRODUCTO TRANSFERIDO EXITOSAMENTE"
+    );
+
+  } catch (err) {
+    console.error("Error transferencia:", {
+  error: err.message,
+  body: req.body
+});
+
+    return error(
+      req,
+      res,
+      500,
+      "Error interno del servidor al transferir producto"
+    );
+  } finally {
+    if (connection) connection.release();
   }
 };
 
@@ -552,6 +616,9 @@ const actualizarCaracteristica = async (req, res) => {
     res.status(500).json({ error: "Error interno del servidor" });
   }
 };
+
+
+
 
 
 

@@ -1,26 +1,42 @@
 import jwt from "jsonwebtoken";
 import { config } from "dotenv";
-import { error, success } from "../messages/browser";
+import { error } from "../messages/browser";
+
 config();
 
-export const verifyToken = async (req, res, next) => {
-    const token = req.headers['x-access-token'];
+export const verifyToken = (req, res, next) => {
+  try {
+    const authHeader = req.headers['authorization'];
 
-    console.log('Token recibido:', token);
+    if (!authHeader) {
+      console.warn("Acceso denegado: No hay Authorization header");
+      return error(req, res, 401, "Token no proporcionado");
+    }
+
+    const token = authHeader.split(' ')[1];
 
     if (!token) {
-        console.log("Acceso denegado: Token no proporcionado");
-        return success(req, res, 401, "Acceso denegado.");
+      console.warn("Acceso denegado: Token vacío");
+      return error(req, res, 401, "Token inválido");
     }
 
-    try {
-        // Verificar el token usando la clave privada
-        const valida = await jwt.verify(token, process.env.TOKEN_PRIVATEKEY);
-        req.user = valida; // Adjuntar los datos del usuario a la solicitud
-        console.log('Usuario autenticado:', req.user);
-        next();
-    } catch (e) {
-        console.error("Error al validar token:", e);
-        error(req, res, 401, "Token inválido o expirado.");
-    }
+    // NO loguear token completo
+    console.log("Token recibido: OK");
+
+    const decoded = jwt.verify(token, process.env.TOKEN_PRIVATEKEY);
+
+    req.user = decoded;
+
+    console.log("Usuario autenticado:", {
+      id: decoded.id_usuario,
+      rol: decoded.rol
+    });
+
+    next();
+
+  } catch (e) {
+    console.error("Error al validar token:", e.message);
+
+    return error(req, res, 401, "Token inválido o expirado");
+  }
 };

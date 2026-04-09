@@ -3,9 +3,6 @@ import {success, error} from "../messages/browser";
 import { config } from "dotenv";
 config();
 
-//-----------------------------------   BASE DE DATOS DE BETROST    --------------------------------------------
-//  ESTA BASE DE DATOS ES LA NUEVA ESTRUCTURA PARA MANEJAR QUE LAS BODEGAS PUEDAN CONCUMIR DE UNA A OTRA
-
 
 const mostrar = async (req, res) => {
     try {
@@ -185,9 +182,107 @@ const eliminar = async (req, res) => {
     }
 }
 
+const bodegasPorUsuario = async (req,res) => {
+
+const { id_usuario } = req.params;
+
+  try {
+    const [rows] = await poolBetrost.query(
+      `
+      SELECT b.id_bodega, b.nombre
+      FROM bodegas b
+      INNER JOIN permisos_bodegas bu 
+        ON bu.id_bodega = b.id_bodega
+      WHERE bu.id_usuario = ?
+      `,
+      [id_usuario]
+    );
+
+    res.json({
+      success: true,
+      data: rows
+    });
+
+  } catch (error) {
+    console.error("Error obteniendo bodegas del usuario:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error al obtener bodegas"
+    });
+  }
+
+}
+
+const asignarBodegaUsuario = async (req, res) => {
+
+  const { id_usuario, bodegas } = req.body;
+
+  try {
+
+    for (const id_bodega of bodegas) {
+
+      await poolBetrost.query(
+        "CALL sp_asignar_bodega_usuario(?,?)",
+        [id_usuario, id_bodega]
+      );
+
+    }
+
+    res.json({
+      success: true,
+      message: "Bodegas asignadas correctamente"
+    });
+
+  } catch (error) {
+
+    console.error("Error asignando bodega:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Error asignando bodegas"
+    });
+
+  }
+
+};
+
+const eliminarPermisoBodega = async (req,res) => {
+
+  const { id_usuario, id_bodega } = req.body;
+
+  try {
+
+    await poolBetrost.query(
+      "CALL sp_eliminar_permiso_bodega(?,?)",
+      [id_usuario,id_bodega]
+    );
+
+    res.json({
+      success:true,
+      message:"Permiso eliminado"
+    });
+
+  } catch (error) {
+
+    console.error("Error eliminando permiso:",error);
+
+    res.status(500).json({
+      success:false,
+      message:"Error eliminando permiso"
+    });
+
+  }
+
+};
+
+
+
 export {
     mostrar,
     crear,
     modificar,
-    eliminar
+    eliminar,
+    bodegasPorUsuario,
+    asignarBodegaUsuario,
+    eliminarPermisoBodega
 };
