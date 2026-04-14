@@ -49,27 +49,30 @@ const eliminar = async (req, res) => {
 };
 
 const modificar = async (req, res) => {
-    const {id_bodega, nombre, contrasena} = req.body;
+    const { id_usuario, id_bodega, nombre, contrasena } = req.body;
 
-    if (!id_bodega || !nombre || !contrasena) {
-        return error(req, res, 400, "Todos los campos son obligatorios");
+    if (!id_usuario || !id_bodega || !nombre) {
+        return error(req, res, 400, "Datos incompletos");
     }
 
     try {
-        const hash = await bcrypt.hash(contrasena, 10);
+        let hash = null;
 
-        const respuesta = await poolBetrost.query(
-            `CALL sp_modificar_usuario(?, ?, ?)`, 
-            [id_bodega, nombre, hash]
+        // Solo encripta si viene contraseña
+        if (contrasena && contrasena.trim() !== "") {
+            hash = await bcrypt.hash(contrasena, 10);
+        }
+
+        const [respuesta] = await poolBetrost.query(
+            `CALL sp_modificar_usuario(?, ?, ?, ?)`,
+            [id_usuario, id_bodega, nombre, hash]
         );
 
-        if (respuesta[0].affectedRows === 1) {
-            success(req, res, 200, "Usuario modificado correctamente");
-        } else {
-            error(req, res, 400, "No se pudo modificar el usuario");
-        }
+        return success(req, res, 200, "Usuario modificado correctamente");
+
     } catch (err) {
-        error(req, res, 500, err.message);
+        console.error("Error al modificar:", err);
+        return error(req, res, 500, err.message);
     }
 };
 
