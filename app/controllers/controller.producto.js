@@ -369,7 +369,13 @@ const finalizarSesionEscaneo = async (req, res) => {
         `SELECT @mensaje AS mensaje;`
       );
 
-      res.status(200).json({ mensaje });
+      console.log("📦 MENSAJE DEL SP:", mensaje);
+
+      if (mensaje.toLowerCase().includes("error")) {
+  return res.status(400).json({ mensaje });
+}
+
+res.status(200).json({ mensaje });
     } finally {
       connection.release();
     }
