@@ -385,6 +385,55 @@ res.status(200).json({ mensaje });
   }
 };
 
+const PREFIJOS_BODEGA = {
+  1: "PPC",
+  2: "PPM",
+  3: "PPI",
+  4: "PPV",
+  5: "PPG",
+  6: "PPT",
+  7: "PPG",
+  8: "PPG",
+  9: "PPG",
+  10: "PPG",
+  11: "PPG",
+  12: "PPG",
+  13: "PPG",
+  14: "PPG",
+  15: "PPG",
+  16: "PPG",
+  17: "PPG",
+  18: "PPG",
+  19: "PPG",
+  20: "PPM",
+  21: "PPM",
+  22: "PPV",
+  23: "PPG",
+  25: "PPT"
+};
+
+const obtenerPrefijoBodega = (idBodegaOrigen) => {
+  return PREFIJOS_BODEGA[idBodegaOrigen] || "PPG";
+};
+
+const construirCodigoModificado = (codigoProducto, caracteristica = "") => {
+  if (!caracteristica) return codigoProducto;
+
+  return `${codigoProducto.slice(0, -2)}${caracteristica}${codigoProducto.slice(-2)}`;
+};
+
+const construirObservacionFinal = ({
+  observaciones,
+  idBodegaOrigen,
+  codigoProducto,
+  caracteristica
+}) => {
+  const prefijo = obtenerPrefijoBodega(idBodegaOrigen);
+  const codigoModificado = construirCodigoModificado(codigoProducto, caracteristica);
+
+  return `${observaciones || ""} ${prefijo}${codigoModificado}`.trim();
+};
+
 const transferirProducto = async (req, res) => {
   let connection;
 
@@ -399,65 +448,76 @@ const transferirProducto = async (req, res) => {
       tipo_movimiento
     } = req.body;
 
-    // =========================
-    // NORMALIZACIÓN
-    // =========================
-    id_bodega_origen = parseInt(id_bodega_origen);
-    id_bodega_destino = parseInt(id_bodega_destino);
-    cantidad = parseInt(cantidad, 0.5);
-    id_usuario = parseInt(id_usuario);
+    id_bodega_origen = Number.parseInt(id_bodega_origen, 10);
+    id_bodega_destino = Number.parseInt(id_bodega_destino, 10);
+    cantidad = Number.parseInt(cantidad, 10);
+    id_usuario = Number.parseInt(id_usuario, 10);
     codigo_producto = codigo_producto?.trim();
     observaciones = observaciones?.trim() || "";
+    tipo_movimiento = tipo_movimiento?.trim()?.toUpperCase();
 
-    // =========================
-    // VALIDACIONES
-    // =========================
     if (
-      !id_bodega_origen == null ||
-      !id_bodega_destino == null ||
-      !codigo_producto  ||
-      !cantidad == null ||
-      !id_usuario == null ||
+      Number.isNaN(id_bodega_origen) ||
+      Number.isNaN(id_bodega_destino) ||
+      Number.isNaN(cantidad) ||
+      Number.isNaN(id_usuario) ||
+      !codigo_producto ||
       !tipo_movimiento
     ) {
-      return error(
-        req,
-        res,
-        400,
-        "Faltan campos requeridos para la transferencia"
-      );
+      return error(req, res, 400, "Faltan campos requeridos para la transferencia");
     }
 
-    if (isNaN(id_bodega_origen) || isNaN(id_bodega_destino)) {
-      return error(req, res, 400, "Las bodegas deben ser numéricas");
-    }
-
-    if (isNaN(cantidad) || cantidad <= 0) {
+    if (cantidad <= 0) {
       return error(req, res, 400, "La cantidad debe ser mayor a 0");
     }
 
     if (id_bodega_origen === id_bodega_destino) {
-      return error(
-        req,
-        res,
-        400,
-        "La bodega origen y destino no pueden ser iguales"
-      );
+      return error(req, res, 400, "La bodega origen y destino no pueden ser iguales");
     }
 
     const tiposValidos = ["ENTRADA", "PROCESO", "COMPLETO"];
     if (!tiposValidos.includes(tipo_movimiento)) {
-      return error(req, res, 400, "Tipo de movimiento inválido");
+      return error(req, res, 400, "Tipo de movimiento invalido");
     }
 
-    // =========================
-    // CONEXIÓN
-    // =========================
     connection = await poolBetrost.getConnection();
-    
-    // =========================
-    // LLAMAR SP
-    // =========================
+
+    const [[usuario]] = await connection.query(
+      `SELECT id_usuario FROM usuarios WHERE id_usuario = ? LIMIT 1`,
+      [id_usuario]
+    );
+
+    if (!usuario) {
+      return error(req, res, 404, "Usuario no existe");
+    }
+
+    const [[producto]] = await connection.query(
+  `
+    SELECT 
+      id_producto,
+      codigo,
+      estado,
+      IFNULL(caracteristica, '') AS caracteristica
+    FROM productos
+    WHERE TRIM(codigo) = TRIM(?)
+      AND UPPER(TRIM(estado)) = 'ACTIVO'
+    LIMIT 1
+  `,
+  [codigo_producto]
+);
+console.log("CODIGO QUE LLEGA:", JSON.stringify(codigo_producto));
+
+    if (!producto) {
+      return error(req, res, 404, "Producto no encontrado");
+    }
+
+    const observacionFinal = construirObservacionFinal({
+      observaciones,
+      idBodegaOrigen: id_bodega_origen,
+      codigoProducto: codigo_producto,
+      caracteristica: producto.caracteristica
+    });
+
     await connection.query(
       `CALL sp_transferir_productos(?, ?, ?, ?, ?, ?, ?, @mensaje);`,
       [
@@ -466,34 +526,25 @@ const transferirProducto = async (req, res) => {
         codigo_producto,
         cantidad,
         id_usuario,
-        observaciones,
+        observacionFinal,
         tipo_movimiento
       ]
     );
 
-    const [mensajeResult] = await connection.query(
-      `SELECT @mensaje AS mensaje;`
-    );
+    const [[mensajeResult]] = await connection.query(`SELECT @mensaje AS mensaje;`);
+    const mensaje = mensajeResult?.mensaje || "Respuesta desconocida";
 
-    const mensaje = mensajeResult[0]?.mensaje || "Respuesta desconocida";
-
-    // =========================
-    // DETECTAR ERRORES DEL SP
-    // =========================
     const esError = [
       "stock insuficiente",
       "error",
       "no existe",
       "no encontrado"
-    ].some((txt) => mensaje.toLowerCase().includes(txt));
+    ].some((texto) => mensaje.toLowerCase().includes(texto));
 
     if (esError) {
       return error(req, res, 400, mensaje);
     }
 
-    // =========================
-    // RESPUESTA EXITOSA
-    // =========================
     return success(
       req,
       res,
@@ -501,19 +552,13 @@ const transferirProducto = async (req, res) => {
       { mensaje },
       "PRODUCTO TRANSFERIDO EXITOSAMENTE"
     );
-
   } catch (err) {
     console.error("Error transferencia:", {
-  error: err.message,
-  body: req.body
-});
+      error: err.message,
+      body: req.body
+    });
 
-    return error(
-      req,
-      res,
-      500,
-      "Error interno del servidor al transferir producto"
-    );
+    return error(req, res, 500, "Error interno del servidor al transferir producto");
   } finally {
     if (connection) connection.release();
   }
@@ -596,6 +641,7 @@ const crear_producto = async (req, res) => {
 
 
 const actualizarCaracteristica = async (req, res) => {
+  console.log("BODY RECIBIDO:", req.body);
   const { codigo_producto, nueva_caracteristica } = req.body;
 
   if (!codigo_producto || !nueva_caracteristica) {
@@ -612,6 +658,7 @@ const actualizarCaracteristica = async (req, res) => {
 
       const [mensajeResult] = await connection.query(`SELECT @mensaje AS mensaje;`);
       const mensaje = mensajeResult[0].mensaje;
+      console.log("MENSAJE SP:", mensaje);
 
       res.status(200).json({ mensaje });
     } finally {
