@@ -671,9 +671,54 @@ const actualizarCaracteristica = async (req, res) => {
 };
 
 
+const consultarCodigo = async (req, res) => {
 
+    const { codigo_barras } = req.body;
 
+    if (!codigo_barras) {
+        return res.status(400).json({
+            ok: false,
+            mensaje: "Código requerido"
+        });
+    }
 
+    try {
+
+        const [rows] = await poolBetrost.query(
+            `
+            SELECT
+                referencia,
+                sku,
+                codigo_barras
+            FROM catalogo_productos
+            WHERE codigo_barras = ?
+            `,
+            [codigo_barras]
+        );
+
+        if (!rows.length) {
+            return res.status(404).json({
+                ok: false,
+                mensaje: "Código no registrado"
+            });
+        }
+
+        return res.status(200).json({
+            ok: true,
+            producto: rows[0]
+        });
+
+    } catch (err) {
+
+        console.error(err);
+
+        return res.status(500).json({
+            ok: false,
+            mensaje: "Error interno"
+        });
+
+    }
+};
 
 
 export {
@@ -689,4 +734,5 @@ export {
   ajustarInventario,
   crear_producto,
   actualizarCaracteristica,
+  consultarCodigo
 };

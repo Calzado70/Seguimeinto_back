@@ -1,5 +1,17 @@
 import { Router } from "express";
-import { actualizarCaracteristica, agregar_producto_sesion, ajustarInventario, cancelar_sesion_escaneo, consultar_inventario, consultar_movimientos, consultar_stock, crear_producto, finalizarSesionEscaneo, iniciar_sesion_escaneo, obtener_detalle_sesion, transferirProducto } from "../controllers/controller.producto";
+import { actualizarCaracteristica, 
+    agregar_producto_sesion, 
+    ajustarInventario, 
+    cancelar_sesion_escaneo, 
+    consultar_inventario, 
+    consultar_movimientos, 
+    consultar_stock, 
+    consultarCodigo, 
+    crear_producto, 
+    finalizarSesionEscaneo, 
+    iniciar_sesion_escaneo, 
+    obtener_detalle_sesion, 
+    transferirProducto } from "../controllers/controller.producto";
 
 
 const rutaProducto = Router();
@@ -16,6 +28,7 @@ rutaProducto.get("/detalle", obtener_detalle_sesion);
 rutaProducto.post("/inicio", iniciar_sesion_escaneo);
 rutaProducto.post("/agregar", agregar_producto_sesion);
 rutaProducto.post("/crear", crear_producto);
+rutaProducto.post("/consultar", consultarCodigo);
 
 
 // METODO PUT -- ACTUALIZAR
