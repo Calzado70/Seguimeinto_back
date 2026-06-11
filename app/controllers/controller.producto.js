@@ -7,7 +7,6 @@ const consultar_inventario = async (req, res) => {
   const { nombre_bodega } = req.query;
 
   try {
-
     let query = `
       SELECT *
       FROM vista_inventario_con_observacion
@@ -30,21 +29,13 @@ const consultar_inventario = async (req, res) => {
         req,
         res,
         404,
-        "No se encontraron productos en el inventario"
+        "No se encontraron productos en el inventario",
       );
     }
-
   } catch (err) {
-
     console.error("Error al consultar inventario:", err);
 
-    return error(
-      req,
-      res,
-      500,
-      "Error interno del servidor"
-    );
-
+    return error(req, res, 500, "Error interno del servidor");
   }
 };
 
@@ -61,14 +52,14 @@ const consultar_stock = async (req, res) => {
       req,
       res,
       400,
-      "El código del producto debe ser una cadena no vacía"
+      "El código del producto debe ser una cadena no vacía",
     );
   }
 
   try {
     const [respuesta] = await poolBetrost.query(
       `CALL sp_consultar_stock_producto(?);`,
-      [codigo_producto.trim()]
+      [codigo_producto.trim()],
     );
     if (respuesta[0] && respuesta[0].length > 0) {
       success(req, res, 200, respuesta[0]);
@@ -77,7 +68,7 @@ const consultar_stock = async (req, res) => {
         req,
         res,
         404,
-        "No se encontró stock disponible para el producto especificado"
+        "No se encontró stock disponible para el producto especificado",
       );
     }
   } catch (error) {
@@ -86,13 +77,13 @@ const consultar_stock = async (req, res) => {
       req,
       res,
       500,
-      "Error interno del servidor al consultar el stock del producto"
+      "Error interno del servidor al consultar el stock del producto",
     );
   }
 };
 
 const consultar_movimientos = async (req, res) => {
-  const { id_bodega, fecha_inicio, fecha_fin, codigo_inteligente} = req.query;
+  const { id_bodega, fecha_inicio, fecha_fin, codigo_inteligente } = req.query;
 
   try {
     const [respuesta] = await poolBetrost.query(
@@ -101,8 +92,8 @@ const consultar_movimientos = async (req, res) => {
         id_bodega ? parseInt(id_bodega) : null,
         fecha_inicio || null,
         fecha_fin || null,
-        codigo_inteligente || null
-      ]
+        codigo_inteligente || null,
+      ],
     );
 
     if (respuesta[0] && respuesta[0].length > 0) {
@@ -111,26 +102,24 @@ const consultar_movimientos = async (req, res) => {
       return error(req, res, 404, "No se encontraron movimientos");
     }
   } catch (err) {
-  console.error("Error al consultar los movimientos:", err);
-  return res.status(500).json({
-    ok: false,
-    message: "Error interno del servidor al consultar los movimientos"
-  });
-}
+    console.error("Error al consultar los movimientos:", err);
+    return res.status(500).json({
+      ok: false,
+      message: "Error interno del servidor al consultar los movimientos",
+    });
+  }
 };
-
-
 
 const isValidDate = (dateString) => {
   const regex = /^\d{4}-\d{2}-\d{2}$/;
   if (!regex.test(dateString)) return false;
-  
+
   const date = new Date(dateString);
   const timestamp = date.getTime();
-  
-  if (typeof timestamp !== 'number' || Number.isNaN(timestamp)) return false;
-  
-  return dateString === date.toISOString().split('T')[0];
+
+  if (typeof timestamp !== "number" || Number.isNaN(timestamp)) return false;
+
+  return dateString === date.toISOString().split("T")[0];
 };
 
 const iniciar_sesion_escaneo = async (req, res) => {
@@ -141,16 +130,16 @@ const iniciar_sesion_escaneo = async (req, res) => {
       req,
       res,
       400,
-      "El ID de la bodega debe ser un número entero positivo"
+      "El ID de la bodega debe ser un número entero positivo",
     );
   }
 
-   if (parseInt(id_bodega) !== 1) {
+  if (parseInt(id_bodega) !== 1) {
     return error(
       req,
       res,
       403,
-      "Solo se permite iniciar sesión de escaneo en la bodega principal"
+      "Solo se permite iniciar sesión de escaneo en la bodega principal",
     );
   }
 
@@ -159,7 +148,7 @@ const iniciar_sesion_escaneo = async (req, res) => {
       req,
       res,
       400,
-      "El nombre del usuario es requerido y debe ser texto"
+      "El nombre del usuario es requerido y debe ser texto",
     );
   }
 
@@ -167,7 +156,7 @@ const iniciar_sesion_escaneo = async (req, res) => {
     // 1. Buscar el ID del usuario por nombre
     const [usuarios] = await poolBetrost.query(
       `SELECT id_usuario FROM usuarios WHERE nombre = ? LIMIT 1`,
-      [nombre_usuario.trim()]
+      [nombre_usuario.trim()],
     );
 
     if (usuarios.length === 0) {
@@ -179,11 +168,11 @@ const iniciar_sesion_escaneo = async (req, res) => {
     // 2. Llamar al procedimiento almacenado con el ID encontrado
     await poolBetrost.query(
       `CALL sp_iniciar_sesion_escaneo(?, ?, ?, @p_id_sesion, @p_mensaje);`,
-      [parseInt(id_bodega), id_usuario, observaciones || null]
+      [parseInt(id_bodega), id_usuario, observaciones || null],
     );
 
     const [output] = await poolBetrost.query(
-      `SELECT @p_id_sesion AS id_sesion, @p_mensaje AS mensaje`
+      `SELECT @p_id_sesion AS id_sesion, @p_mensaje AS mensaje`,
     );
 
     const { id_sesion, mensaje } = output[0];
@@ -199,7 +188,7 @@ const iniciar_sesion_escaneo = async (req, res) => {
       req,
       res,
       500,
-      "Error interno del servidor al iniciar sesión de escaneo"
+      "Error interno del servidor al iniciar sesión de escaneo",
     );
   }
 };
@@ -214,7 +203,7 @@ const agregar_producto_sesion = async (req, res) => {
       req,
       res,
       400,
-      "El ID de la sesión debe ser un número entero positivo"
+      "El ID de la sesión debe ser un número entero positivo",
     );
   }
   if (
@@ -226,7 +215,7 @@ const agregar_producto_sesion = async (req, res) => {
       req,
       res,
       400,
-      "El código del producto debe ser una cadena no vacía"
+      "El código del producto debe ser una cadena no vacía",
     );
   }
   if (!cantidad || isNaN(cantidad) || cantidad <= 0) {
@@ -234,14 +223,14 @@ const agregar_producto_sesion = async (req, res) => {
       req,
       res,
       400,
-      "La cantidad debe ser un número entero positivo"
+      "La cantidad debe ser un número entero positivo",
     );
   }
 
   try {
     const [result] = await poolBetrost.query(
       `CALL sp_agregar_producto_sesion(?, ?, ?, @p_mensaje);`,
-      [parseInt(id_sesion), codigo_producto.trim(), parseInt(cantidad)]
+      [parseInt(id_sesion), codigo_producto.trim(), parseInt(cantidad)],
     );
 
     // Retrieve the output parameter
@@ -262,7 +251,7 @@ const agregar_producto_sesion = async (req, res) => {
       req,
       res,
       500,
-      "Error interno del servidor al agregar producto a la sesión"
+      "Error interno del servidor al agregar producto a la sesión",
     );
   }
 };
@@ -276,14 +265,14 @@ const obtener_detalle_sesion = async (req, res) => {
       req,
       res,
       400,
-      "El ID de la sesión debe ser un número entero positivo"
+      "El ID de la sesión debe ser un número entero positivo",
     );
   }
 
   try {
     const [results] = await poolBetrost.query(
       `CALL sp_obtener_detalle_sesion(?);`,
-      [parseInt(id_sesion)]
+      [parseInt(id_sesion)],
     );
 
     // Extract the two result sets
@@ -305,7 +294,7 @@ const obtener_detalle_sesion = async (req, res) => {
       req,
       res,
       500,
-      "Error interno del servidor al obtener detalle de la sesión"
+      "Error interno del servidor al obtener detalle de la sesión",
     );
   }
 };
@@ -319,14 +308,14 @@ const cancelar_sesion_escaneo = async (req, res) => {
       req,
       res,
       400,
-      "El ID de la sesión debe ser un número entero positivo"
+      "El ID de la sesión debe ser un número entero positivo",
     );
   }
 
   try {
     const [result] = await poolBetrost.query(
       `CALL sp_cancelar_sesion_escaneo(?, @p_mensaje);`,
-      [parseInt(id_sesion)]
+      [parseInt(id_sesion)],
     );
 
     // Retrieve the output parameter
@@ -345,7 +334,7 @@ const cancelar_sesion_escaneo = async (req, res) => {
       req,
       res,
       500,
-      "Error interno del servidor al cancelar sesión de escaneo"
+      "Error interno del servidor al cancelar sesión de escaneo",
     );
   }
 };
@@ -366,16 +355,16 @@ const finalizarSesionEscaneo = async (req, res) => {
       ]);
 
       const [[{ mensaje }]] = await connection.query(
-        `SELECT @mensaje AS mensaje;`
+        `SELECT @mensaje AS mensaje;`,
       );
 
       console.log("📦 MENSAJE DEL SP:", mensaje);
 
       if (mensaje.toLowerCase().includes("error")) {
-  return res.status(400).json({ mensaje });
-}
+        return res.status(400).json({ mensaje });
+      }
 
-res.status(200).json({ mensaje });
+      res.status(200).json({ mensaje });
     } finally {
       connection.release();
     }
@@ -409,7 +398,7 @@ const PREFIJOS_BODEGA = {
   21: "PPM",
   22: "PPV",
   23: "PPG",
-  25: "PPT"
+  25: "PPT",
 };
 
 const obtenerPrefijoBodega = (idBodegaOrigen) => {
@@ -426,10 +415,13 @@ const construirObservacionFinal = ({
   observaciones,
   idBodegaOrigen,
   codigoProducto,
-  caracteristica
+  caracteristica,
 }) => {
   const prefijo = obtenerPrefijoBodega(idBodegaOrigen);
-  const codigoModificado = construirCodigoModificado(codigoProducto, caracteristica);
+  const codigoModificado = construirCodigoModificado(
+    codigoProducto,
+    caracteristica,
+  );
 
   return `${observaciones || ""} ${prefijo}${codigoModificado}`.trim();
 };
@@ -445,7 +437,7 @@ const transferirProducto = async (req, res) => {
       cantidad,
       id_usuario,
       observaciones,
-      tipo_movimiento
+      tipo_movimiento,
     } = req.body;
 
     id_bodega_origen = Number.parseInt(id_bodega_origen, 10);
@@ -464,7 +456,12 @@ const transferirProducto = async (req, res) => {
       !codigo_producto ||
       !tipo_movimiento
     ) {
-      return error(req, res, 400, "Faltan campos requeridos para la transferencia");
+      return error(
+        req,
+        res,
+        400,
+        "Faltan campos requeridos para la transferencia",
+      );
     }
 
     if (cantidad <= 0) {
@@ -472,7 +469,12 @@ const transferirProducto = async (req, res) => {
     }
 
     if (id_bodega_origen === id_bodega_destino) {
-      return error(req, res, 400, "La bodega origen y destino no pueden ser iguales");
+      return error(
+        req,
+        res,
+        400,
+        "La bodega origen y destino no pueden ser iguales",
+      );
     }
 
     const tiposValidos = ["ENTRADA", "PROCESO", "COMPLETO"];
@@ -484,7 +486,7 @@ const transferirProducto = async (req, res) => {
 
     const [[usuario]] = await connection.query(
       `SELECT id_usuario FROM usuarios WHERE id_usuario = ? LIMIT 1`,
-      [id_usuario]
+      [id_usuario],
     );
 
     if (!usuario) {
@@ -492,7 +494,7 @@ const transferirProducto = async (req, res) => {
     }
 
     const [[producto]] = await connection.query(
-  `
+      `
     SELECT 
       id_producto,
       codigo,
@@ -503,9 +505,9 @@ const transferirProducto = async (req, res) => {
       AND UPPER(TRIM(estado)) = 'ACTIVO'
     LIMIT 1
   `,
-  [codigo_producto]
-);
-console.log("CODIGO QUE LLEGA:", JSON.stringify(codigo_producto));
+      [codigo_producto],
+    );
+    console.log("CODIGO QUE LLEGA:", JSON.stringify(codigo_producto));
 
     if (!producto) {
       return error(req, res, 404, "Producto no encontrado");
@@ -515,7 +517,7 @@ console.log("CODIGO QUE LLEGA:", JSON.stringify(codigo_producto));
       observaciones,
       idBodegaOrigen: id_bodega_origen,
       codigoProducto: codigo_producto,
-      caracteristica: producto.caracteristica
+      caracteristica: producto.caracteristica,
     });
 
     await connection.query(
@@ -527,18 +529,20 @@ console.log("CODIGO QUE LLEGA:", JSON.stringify(codigo_producto));
         cantidad,
         id_usuario,
         observacionFinal,
-        tipo_movimiento
-      ]
+        tipo_movimiento,
+      ],
     );
 
-    const [[mensajeResult]] = await connection.query(`SELECT @mensaje AS mensaje;`);
+    const [[mensajeResult]] = await connection.query(
+      `SELECT @mensaje AS mensaje;`,
+    );
     const mensaje = mensajeResult?.mensaje || "Respuesta desconocida";
 
     const esError = [
       "stock insuficiente",
       "error",
       "no existe",
-      "no encontrado"
+      "no encontrado",
     ].some((texto) => mensaje.toLowerCase().includes(texto));
 
     if (esError) {
@@ -550,15 +554,20 @@ console.log("CODIGO QUE LLEGA:", JSON.stringify(codigo_producto));
       res,
       200,
       { mensaje },
-      "PRODUCTO TRANSFERIDO EXITOSAMENTE"
+      "PRODUCTO TRANSFERIDO EXITOSAMENTE",
     );
   } catch (err) {
     console.error("Error transferencia:", {
       error: err.message,
-      body: req.body
+      body: req.body,
     });
 
-    return error(req, res, 500, "Error interno del servidor al transferir producto");
+    return error(
+      req,
+      res,
+      500,
+      "Error interno del servidor al transferir producto",
+    );
   } finally {
     if (connection) connection.release();
   }
@@ -585,7 +594,7 @@ const ajustarInventario = async (req, res) => {
         CALL sp_ajustar_inventario(?, ?, ?, ?, ?, @mensaje);
         SELECT @mensaje AS mensaje;
       `,
-        [id_bodega, codigo_producto, nueva_cantidad, id_usuario, motivo || ""]
+        [id_bodega, codigo_producto, nueva_cantidad, id_usuario, motivo || ""],
       );
 
       const mensaje = result[1][0].mensaje;
@@ -631,14 +640,13 @@ const crear_producto = async (req, res) => {
         req,
         res,
         400,
-        "El código ya está registrado o está inactivo."
+        "El código ya está registrado o está inactivo.",
       );
     }
 
     error(req, res, 500, "Error interno del servidor al crear el producto.");
   }
 };
-
 
 const actualizarCaracteristica = async (req, res) => {
   console.log("BODY RECIBIDO:", req.body);
@@ -653,10 +661,12 @@ const actualizarCaracteristica = async (req, res) => {
     try {
       const [result] = await connection.query(
         `CALL sp_actualizar_caracteristica_producto(?, ?, @mensaje);`,
-        [codigo_producto, nueva_caracteristica]
+        [codigo_producto, nueva_caracteristica],
       );
 
-      const [mensajeResult] = await connection.query(`SELECT @mensaje AS mensaje;`);
+      const [mensajeResult] = await connection.query(
+        `SELECT @mensaje AS mensaje;`,
+      );
       const mensaje = mensajeResult[0].mensaje;
       console.log("MENSAJE SP:", mensaje);
 
@@ -671,55 +681,205 @@ const actualizarCaracteristica = async (req, res) => {
 };
 
 
+// CONTROLADORES PARA LA CONSULTA CREAR MODIFICAR O INHABILITAR PRODUCTOS EN EL CATALOGO
+
 const consultarCodigo = async (req, res) => {
+  const { codigo_barras } = req.body;
 
-    const { codigo_barras } = req.body;
+  if (!codigo_barras) {
+    return res.status(400).json({
+      ok: false,
+      mensaje: "Código requerido",
+    });
+  }
 
-    if (!codigo_barras) {
-        return res.status(400).json({
-            ok: false,
-            mensaje: "Código requerido"
-        });
-    }
-
-    try {
-
-        const [rows] = await poolBetrost.query(
-            `
-            SELECT
-                referencia,
-                sku,
-                codigo_barras
+  try {
+    const [rows] = await poolBetrost.query(
+      `
+            SELECT 
+id_catalogo,
+referencia,
+sku,
+codigo_barras,
+fecha_creacion,
+estado
             FROM catalogo_productos
             WHERE codigo_barras = ?
+            AND estado = 1
             `,
-            [codigo_barras]
-        );
+      [codigo_barras],
+    );
 
-        if (!rows.length) {
-            return res.status(404).json({
-                ok: false,
-                mensaje: "Código no registrado"
-            });
-        }
-
-        return res.status(200).json({
-            ok: true,
-            producto: rows[0]
-        });
-
-    } catch (err) {
-
-        console.error(err);
-
-        return res.status(500).json({
-            ok: false,
-            mensaje: "Error interno"
-        });
-
+    if (!rows.length) {
+      return res.status(404).json({
+        ok: false,
+        mensaje: "Código no registrado",
+      });
     }
+
+    return res.status(200).json({
+      ok: true,
+      producto: rows[0],
+    });
+  } catch (err) {
+    console.error(err);
+
+    return res.status(500).json({
+      ok: false,
+      mensaje: "Error interno",
+    });
+  }
 };
 
+const listar_catalogo = async (req, res) => {
+  try {
+    const [rows] = await poolBetrost.query(`
+
+SELECT
+id_catalogo,
+referencia,
+sku,
+codigo_barras,
+fecha_creacion,
+estado
+
+FROM catalogo_productos
+
+ORDER BY id_catalogo DESC
+
+`);
+
+    return success(req, res, 200, rows);
+  } catch (err) {
+    console.error(err);
+
+    return error(req, res, 500, "Error consultando catálogo");
+  }
+};
+
+const crear_catalogo = async (req, res) => {
+  const { referencia, sku, codigo_barras } = req.body;
+
+  if (!referencia || !sku || !codigo_barras) {
+    return error(req, res, 400, "Todos los campos son obligatorios");
+  }
+
+  try {
+    await poolBetrost.query(
+      `
+INSERT INTO catalogo_productos
+(
+referencia,
+sku,
+codigo_barras,
+fecha_creacion,
+estado
+)
+
+VALUES
+(?,?,?,NOW(),1)
+
+`,
+      [referencia, sku, codigo_barras],
+    );
+
+    return success(req, res, 200, {
+      mensaje: "Producto agregado al catálogo",
+    });
+  } catch (err) {
+    console.error(err);
+
+    if (err.errno === 1062) {
+      return error(req, res, 400, "El código ya existe");
+    }
+
+    return error(req, res, 500, "Error creando producto");
+  }
+};
+
+const actualizar_catalogo = async (req, res) => {
+  const { id_catalogo, referencia, sku, codigo_barras } = req.body;
+
+  try {
+    await poolBetrost.query(
+      `
+
+UPDATE catalogo_productos
+
+SET
+
+referencia=?,
+sku=?,
+codigo_barras=?
+
+WHERE id_catalogo=?
+
+
+`,
+      [referencia, sku, codigo_barras, id_catalogo],
+    );
+
+    return success(req, res, 200, {
+      mensaje: "Catálogo actualizado",
+    });
+  } catch (err) {
+    console.error(err);
+
+    return error(req, res, 500, "Error actualizando catálogo");
+  }
+};
+
+const inhabilitar_catalogo = async (req, res) => {
+  const { id_catalogo } = req.body;
+
+  try {
+    await poolBetrost.query(
+      `
+
+UPDATE catalogo_productos
+
+SET estado=0
+
+WHERE id_catalogo=?
+
+`,
+      [id_catalogo],
+    );
+
+    return success(req, res, 200, {
+      mensaje: "Producto inhabilitado",
+    });
+  } catch (err) {
+    console.error(err);
+
+    return error(req, res, 500, "Error inhabilitando producto");
+  }
+};
+
+const activar_catalogo = async (req, res) => {
+  const { id_catalogo } = req.body;
+
+  try {
+    await poolBetrost.query(
+      `
+
+UPDATE catalogo_productos
+
+SET estado=1
+
+WHERE id_catalogo=?
+
+`,
+      [id_catalogo],
+    );
+
+    return success(req, res, 200, {
+      mensaje: "Producto activado",
+    });
+  } catch (err) {
+    return error(req, res, 500, "Error activando producto");
+  }
+};
 
 export {
   consultar_inventario,
@@ -734,5 +894,10 @@ export {
   ajustarInventario,
   crear_producto,
   actualizarCaracteristica,
-  consultarCodigo
+  consultarCodigo,
+  listar_catalogo,
+  crear_catalogo,
+  actualizar_catalogo,
+  inhabilitar_catalogo,
+  activar_catalogo,
 };
