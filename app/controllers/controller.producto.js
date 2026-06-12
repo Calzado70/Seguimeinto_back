@@ -830,55 +830,135 @@ WHERE id_catalogo=?
 };
 
 const inhabilitar_catalogo = async (req, res) => {
+
   const { id_catalogo } = req.body;
 
+
+  if (!id_catalogo) {
+
+    return res.status(400).json({
+      ok:false,
+      mensaje:"ID del producto requerido"
+    });
+
+  }
+
+
   try {
-    await poolBetrost.query(
+
+
+    const [resultado] = await poolBetrost.query(
+
       `
+      UPDATE catalogo_productos
+      SET estado='INACTIVO'
+      WHERE id_catalogo=?
+      `,
 
-UPDATE catalogo_productos
+      [id_catalogo]
 
-SET estado=0
-
-WHERE id_catalogo=?
-
-`,
-      [id_catalogo],
     );
 
-    return success(req, res, 200, {
-      mensaje: "Producto inhabilitado",
-    });
-  } catch (err) {
-    console.error(err);
 
-    return error(req, res, 500, "Error inhabilitando producto");
+
+    if(resultado.affectedRows === 0){
+
+      return res.status(404).json({
+
+        ok:false,
+
+        mensaje:"Producto no encontrado"
+
+      });
+
+    }
+
+
+
+    return res.status(200).json({
+
+      ok:true,
+
+      mensaje:"Producto inhabilitado correctamente"
+
+    });
+
+
+
+  } catch(error){
+
+
+    console.error("ERROR INHABILITAR:",error);
+
+
+    return res.status(500).json({
+
+      ok:false,
+
+      mensaje:"Error interno al inhabilitar producto"
+
+    });
+
+
   }
+
 };
 
-const activar_catalogo = async (req, res) => {
-  const { id_catalogo } = req.body;
+const activar_catalogo = async (req,res)=>{
 
-  try {
-    await poolBetrost.query(
-      `
 
+const {id_catalogo}=req.body;
+
+
+
+try{
+
+
+const [resultado]=await poolBetrost.query(
+
+`
 UPDATE catalogo_productos
 
-SET estado=1
+SET estado='ACTIVO'
 
 WHERE id_catalogo=?
 
 `,
-      [id_catalogo],
-    );
 
-    return success(req, res, 200, {
-      mensaje: "Producto activado",
-    });
-  } catch (err) {
-    return error(req, res, 500, "Error activando producto");
-  }
+[id_catalogo]
+
+
+);
+
+
+
+return res.json({
+
+ok:true,
+
+mensaje:"Producto activado"
+
+});
+
+
+}catch(error){
+
+
+console.error(error);
+
+
+return res.status(500).json({
+
+ok:false,
+
+mensaje:"Error activando producto"
+
+});
+
+
+}
+
+
 };
 
 export {
