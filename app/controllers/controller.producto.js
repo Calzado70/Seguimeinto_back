@@ -1,5 +1,15 @@
 import poolBetrost from "../config/mysql.db";
-import { success, error } from "../messages/browser.js";
+import { success, error } from "../messages/browser";
+import {
+  contarFilas,
+  enviarTotalCount,
+  normalizarPaginacion,
+} from "../utils/paginacion";
+import { conIdentidad } from "../utils/identidad";
+import {
+  recortarFila,
+  registrarAuditoria,
+} from "../utils/auditoria";
 import { config } from "dotenv";
 config();
 
@@ -40,7 +50,7 @@ const consultar_inventario = async (req, res) => {
 };
 
 const consultar_stock = async (req, res) => {
-  const { codigo_producto } = req.body;
+  const { codigo_producto } = req.query;
 
   // Validar que codigo_producto esté presente y sea válido
   if (
@@ -71,8 +81,8 @@ const consultar_stock = async (req, res) => {
         "No se encontró stock disponible para el producto especificado",
       );
     }
-  } catch (error) {
-    console.error("Error al consultar el stock del producto:", error);
+  } catch (err) {
+    console.error("Error al consultar el stock del producto:", err);
     error(
       req,
       res,
@@ -238,8 +248,6 @@ const agregar_producto_sesion = async (req, res) => {
 
     const { mensaje } = output[0];
 
-    console.log("🧩 Mensaje devuelto por el SP:", mensaje);
-
     if (mensaje === "Producto agregado correctamente") {
       success(req, res, 200, { mensaje });
     } else {
@@ -257,7 +265,7 @@ const agregar_producto_sesion = async (req, res) => {
 };
 
 const obtener_detalle_sesion = async (req, res) => {
-  const { id_sesion } = req.body;
+  const { id_sesion } = req.query;
 
   // Validate input parameter
   if (!id_sesion || isNaN(id_sesion) || id_sesion <= 0) {
@@ -288,8 +296,8 @@ const obtener_detalle_sesion = async (req, res) => {
       sesion,
       detalles,
     });
-  } catch (error) {
-    console.error("Error al obtener detalle de la sesión:", error);
+  } catch (err) {
+    console.error("Error al obtener detalle de la sesión:", err);
     error(
       req,
       res,
@@ -328,8 +336,8 @@ const cancelar_sesion_escaneo = async (req, res) => {
     } else {
       error(req, res, 400, mensaje);
     }
-  } catch (error) {
-    console.error("Error al cancelar sesión de escaneo:", error);
+  } catch (err) {
+    console.error("Error al cancelar sesión de escaneo:", err);
     error(
       req,
       res,
@@ -347,7 +355,7 @@ const finalizarSesionEscaneo = async (req, res) => {
   }
 
   try {
-    const connection = await poolBetrost.getConnection();
+    const connection = await conIdentidad(poolBetrost, req);
 
     try {
       await connection.query(`CALL sp_finalizar_sesion_escaneo(?, @mensaje);`, [
@@ -433,7 +441,6 @@ const transferirProducto = async (req, res) => {
       id_bodega_destino,
       codigo_producto,
       cantidad,
-      id_usuario,
       observaciones,
       tipo_movimiento,
     } = req.body;
@@ -441,7 +448,7 @@ const transferirProducto = async (req, res) => {
     id_bodega_origen = Number.parseInt(id_bodega_origen, 10);
     id_bodega_destino = Number.parseInt(id_bodega_destino, 10);
     cantidad = Number.parseInt(cantidad, 10);
-    id_usuario = Number.parseInt(id_usuario, 10);
+    const id_usuario = Number.parseInt(req.user.id_usuario, 10);
     codigo_producto = codigo_producto?.trim();
     observaciones = observaciones?.trim() || "";
     tipo_movimiento = tipo_movimiento?.trim()?.toUpperCase();
@@ -480,7 +487,7 @@ const transferirProducto = async (req, res) => {
       return error(req, res, 400, "Tipo de movimiento invalido");
     }
 
-    connection = await poolBetrost.getConnection();
+    connection = await conIdentidad(poolBetrost, req);
 
     const [[usuario]] = await connection.query(
       `SELECT id_usuario FROM usuarios WHERE id_usuario = ? LIMIT 1`,
@@ -505,7 +512,6 @@ const transferirProducto = async (req, res) => {
   `,
       [codigo_producto],
     );
-    console.log("CODIGO QUE LLEGA:", JSON.stringify(codigo_producto));
 
     if (!producto) {
       return error(req, res, 404, "Producto no encontrado");
@@ -578,14 +584,13 @@ const finalizarProductoTerminada = async (req, res) => {
     cantidad,
     id_bodega_origen,
     id_bodega_destino,
-    id_usuario,
     tipo_movimiento,
   } = req.body;
 
   id_bodega_origen = Number.parseInt(id_bodega_origen, 10);
   id_bodega_destino = Number.parseInt(id_bodega_destino, 10) || id_bodega_origen;
   cantidad = Number.parseInt(cantidad, 10);
-  id_usuario = Number.parseInt(id_usuario, 10);
+  const id_usuario = Number.parseInt(req.user.id_usuario, 10);
   codigo_producto = codigo_producto?.trim();
   caracteristica = caracteristica?.trim() || "";
   tipo_movimiento = tipo_movimiento?.trim()?.toUpperCase() || "COMPLETO";
@@ -625,7 +630,7 @@ const finalizarProductoTerminada = async (req, res) => {
   let connection;
 
   try {
-    connection = await poolBetrost.getConnection();
+    connection = await conIdentidad(poolBetrost, req);
 
     // 1. Validar usuario
     const [[usuario]] = await connection.query(
@@ -671,11 +676,11 @@ const finalizarProductoTerminada = async (req, res) => {
       bodegaDestino = 25;
       crearProductoNuevo = 1;
     }
-    // Terminada Proceso (6) + PROCESO/ENTRADA → consume de Montaje Completo (21) → mantiene código
+    // Terminada Proceso (6) + PROCESO/ENTRADA → consume de Montaje Completo (21) → genera código con característica
     else if (id_bodega_origen === 6 && ["PROCESO", "ENTRADA"].includes(tipo_movimiento)) {
       bodegaConsumo = 21;
       bodegaDestino = 6;
-      crearProductoNuevo = 0;
+      crearProductoNuevo = 1;
     }
     // Flujo normal
     else {
@@ -686,18 +691,6 @@ const finalizarProductoTerminada = async (req, res) => {
 
     // 7. Construir observación
     const observacion = `${crearProductoNuevo ? codigoFinal : baseCodigo}`;
-
-    // DEBUG - eliminar después
-    console.log("=== FINALIZAR TERMINADA ===");
-    console.log("id_bodega_origen:", id_bodega_origen);
-    console.log("tipo_movimiento:", tipo_movimiento);
-    console.log("baseCodigo:", baseCodigo);
-    console.log("codigoFinal:", codigoFinal);
-    console.log("crearProductoNuevo:", crearProductoNuevo);
-    console.log("bodegaConsumo:", bodegaConsumo);
-    console.log("bodegaDestino:", bodegaDestino);
-    console.log("codigo enviado al SP:", crearProductoNuevo ? codigoFinal : baseCodigo);
-    console.log("===========================");
 
     // 8. Llamar SP simplificado
     await connection.query(
@@ -749,30 +742,29 @@ const finalizarProductoTerminada = async (req, res) => {
 };
 
 const ajustarInventario = async (req, res) => {
-  const { id_bodega, codigo_producto, nueva_cantidad, id_usuario, motivo } =
-    req.body;
+  const { id_bodega, codigo_producto, nueva_cantidad, motivo } = req.body;
 
   if (
     !id_bodega ||
     !codigo_producto ||
-    nueva_cantidad === undefined ||
-    !id_usuario
+    nueva_cantidad === undefined
   ) {
     return res.status(400).json({ error: "Faltan campos obligatorios" });
   }
 
+  const id_usuario = Number.parseInt(req.user.id_usuario, 10);
+
   try {
-    const connection = await poolBetrost.getConnection();
+    const connection = await conIdentidad(poolBetrost, req);
     try {
-      const [_, result] = await connection.query(
-        `
-        CALL sp_ajustar_inventario(?, ?, ?, ?, ?, @mensaje);
-        SELECT @mensaje AS mensaje;
-      `,
+      await connection.query(
+        `CALL sp_ajustar_inventario(?, ?, ?, ?, ?, @mensaje);`,
         [id_bodega, codigo_producto, nueva_cantidad, id_usuario, motivo || ""],
       );
 
-      const mensaje = result[1][0].mensaje;
+      const [[{ mensaje }]] = await connection.query(
+        `SELECT @mensaje AS mensaje;`,
+      );
       res.status(200).json({ mensaje });
     } finally {
       connection.release();
@@ -832,7 +824,7 @@ const actualizarCaracteristica = async (req, res) => {
   }
 
   try {
-    const connection = await poolBetrost.getConnection();
+    const connection = await conIdentidad(poolBetrost, req);
     try {
       const [result] = await connection.query(
         `CALL sp_actualizar_caracteristica_producto(?, ?, @mensaje);`,
@@ -907,22 +899,38 @@ estado
 };
 
 const listar_catalogo = async (req, res) => {
+  const { limit, offset } = normalizarPaginacion(req.query);
+
+  // El buscador del frontend filtra por estas mismas tres columnas, así
+  // que el filtro viaja al servidor en lugar de recorrer la tabla entera
+  // en el navegador.
+  const busqueda = (req.query.buscar || "").trim();
+
+  const where = busqueda
+    ? "(codigo_barras LIKE ? OR sku LIKE ? OR referencia LIKE ?)"
+    : "";
+
+  const params = busqueda ? Array(3).fill(`%${busqueda}%`) : [];
+
   try {
-    const [rows] = await poolBetrost.query(`
+    const total = await contarFilas(poolBetrost, "catalogo_productos", where, params);
 
-SELECT
-id_catalogo,
-referencia,
-sku,
-codigo_barras,
-fecha_creacion,
-estado
-
+    const [rows] = await poolBetrost.query(
+      `SELECT
+  id_catalogo,
+  referencia,
+  sku,
+  codigo_barras,
+  fecha_creacion,
+  estado
 FROM catalogo_productos
-
+${where ? `WHERE ${where}` : ""}
 ORDER BY id_catalogo DESC
+LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    );
 
-`);
+    enviarTotalCount(res, total);
 
     return success(req, res, 200, rows);
   } catch (err) {
@@ -940,7 +948,7 @@ const crear_catalogo = async (req, res) => {
   }
 
   try {
-    await poolBetrost.query(
+    const [resultado] = await poolBetrost.query(
       `
 INSERT INTO catalogo_productos
 (
@@ -957,6 +965,13 @@ VALUES
 `,
       [referencia, sku, codigo_barras],
     );
+
+    await registrarAuditoria(poolBetrost, req, {
+      tabla: "catalogo_productos",
+      accion: "CREAR",
+      id_registro: resultado.insertId ?? null,
+      datos_despues: { referencia, sku, codigo_barras, estado: 1 },
+    });
 
     return success(req, res, 200, {
       mensaje: "Producto agregado al catálogo",
@@ -976,6 +991,11 @@ const actualizar_catalogo = async (req, res) => {
   const { id_catalogo, referencia, sku, codigo_barras } = req.body;
 
   try {
+    const [previo] = await poolBetrost.query(
+      `SELECT referencia, sku, codigo_barras FROM catalogo_productos WHERE id_catalogo = ?`,
+      [id_catalogo],
+    );
+
     await poolBetrost.query(
       `
 
@@ -993,6 +1013,14 @@ WHERE id_catalogo=?
 `,
       [referencia, sku, codigo_barras, id_catalogo],
     );
+
+    await registrarAuditoria(poolBetrost, req, {
+      tabla: "catalogo_productos",
+      accion: "MODIFICAR",
+      id_registro: id_catalogo ?? null,
+      datos_antes: recortarFila(previo[0], ["referencia", "sku", "codigo_barras"]),
+      datos_despues: { referencia, sku, codigo_barras },
+    });
 
     return success(req, res, 200, {
       mensaje: "Catálogo actualizado",
@@ -1021,6 +1049,10 @@ const inhabilitar_catalogo = async (req, res) => {
 
   try {
 
+    const [previo] = await poolBetrost.query(
+      `SELECT estado FROM catalogo_productos WHERE id_catalogo = ?`,
+      [id_catalogo]
+    );
 
     const [resultado] = await poolBetrost.query(
 
@@ -1047,6 +1079,14 @@ const inhabilitar_catalogo = async (req, res) => {
       });
 
     }
+
+    await registrarAuditoria(poolBetrost, req, {
+      tabla: "catalogo_productos",
+      accion: "CAMBIAR_ESTADO",
+      id_registro: id_catalogo,
+      datos_antes: recortarFila(previo[0], ["estado"]),
+      datos_despues: { estado: "INACTIVO" },
+    });
 
 
 
@@ -1085,6 +1125,7 @@ const inhabilitar_catalogo = async (req, res) => {
 
 const BODEGA_TERMINADA_COMPLETO = 25;
 const BODEGA_LOGISTICA = 27;
+const BODEGA_TERMINADA_PROCESO = 6;
 
 const consultarConsumoLogistica = async (req, res) => {
   const { codigo_barras } = req.query;
@@ -1129,7 +1170,7 @@ const consultarConsumoLogistica = async (req, res) => {
         p.caracteristica,
         IFNULL(i.cantidad_disponible, 0) AS stock_disponible
       FROM productos p
-      LEFT JOIN inventario i
+      LEFT JOIN inventario i  
         ON i.id_producto = p.id_producto
        AND i.id_bodega = ?
       WHERE p.codigo = ?
@@ -1160,21 +1201,21 @@ const consultarConsumoLogistica = async (req, res) => {
 };
 
 const ejecutarConsumoLogistica = async (req, res) => {
-  let { codigo_producto, cantidad, id_usuario, observaciones } = req.body;
+  let { codigo_producto, cantidad, observaciones } = req.body;
 
   codigo_producto = codigo_producto?.trim();
   cantidad = Number.parseInt(cantidad, 10);
-  id_usuario = Number.parseInt(id_usuario, 10);
+  const id_usuario = Number.parseInt(req.user.id_usuario, 10);
   observaciones = observaciones?.trim() || "";
 
-  if (!codigo_producto || Number.isNaN(cantidad) || cantidad <= 0 || Number.isNaN(id_usuario)) {
-    return error(req, res, 400, "Código del producto, cantidad e id_usuario son obligatorios");
+  if (!codigo_producto || Number.isNaN(cantidad) || cantidad <= 0) {
+    return error(req, res, 400, "Código del producto y cantidad son obligatorios");
   }
 
   let connection;
 
   try {
-    connection = await poolBetrost.getConnection();
+    connection = await conIdentidad(poolBetrost, req);
 
     const [[usuario]] = await connection.query(
       `SELECT id_usuario FROM usuarios WHERE id_usuario = ? LIMIT 1`,
@@ -1236,16 +1277,176 @@ const ejecutarConsumoLogistica = async (req, res) => {
     if (connection) connection.release();
   }
 };
+// ============================================================
+// CONSUMO TERMINADA COMPLETO (Terminada Proceso 6 → Terminada Completo 25)
+// ============================================================
+
+const consultarConsumoTerminadaProceso = async (req, res) => {
+  const { codigo_barras } = req.query;
+
+  if (!codigo_barras || typeof codigo_barras !== "string" || codigo_barras.trim() === "") {
+    return error(req, res, 400, "El código de barras es obligatorio");
+  }
+
+  const barcode = codigo_barras.trim();
+
+  try {
+    const [rows] = await poolBetrost.query(
+      `
+      SELECT
+        id_catalogo,
+        referencia,
+        sku,
+        codigo_barras
+      FROM catalogo_productos
+      WHERE codigo_barras = ?
+      AND estado = 1
+      LIMIT 1
+      `,
+      [barcode],
+    );
+
+    if (!rows.length) {
+      return error(req, res, 404, "Código de barras no registrado en el catálogo");
+    }
+
+    const catalogo = rows[0];
+    const talla = barcode.slice(-2);
+    const codigoProducto = `${catalogo.referencia}${talla}`;
+
+    const [productoRows] = await poolBetrost.query(
+      `
+      SELECT
+        p.id_producto,
+        p.codigo,
+        p.caracteristica,
+        IFNULL(i.cantidad_disponible, 0) AS stock_disponible
+      FROM productos p
+      LEFT JOIN inventario i
+        ON i.id_producto = p.id_producto
+       AND i.id_bodega = ?
+      WHERE p.codigo = ?
+        AND p.estado = 'ACTIVO'
+      LIMIT 1
+      `,
+      [BODEGA_TERMINADA_PROCESO, codigoProducto],
+    );
+
+    const producto = productoRows[0] || null;
+
+    return success(req, res, 200, {
+      codigo_barras: barcode,
+      referencia: catalogo.referencia,
+      sku: catalogo.sku,
+      talla,
+      codigo_producto: codigoProducto,
+      id_producto: producto ? producto.id_producto : null,
+      caracteristica: producto ? producto.caracteristica : "",
+      stock_disponible: producto ? producto.stock_disponible : 0,
+      bodega_terminada_proceso: BODEGA_TERMINADA_PROCESO,
+      bodega_terminada_completo: BODEGA_TERMINADA_COMPLETO,
+    });
+  } catch (err) {
+    console.error("Error consultando consumo terminada proceso:", err);
+    return error(req, res, 500, "Error interno del servidor al consultar el producto");
+  }
+};
+
+const ejecutarConsumoTerminadaProceso = async (req, res) => {
+  let { codigo_producto, cantidad, observaciones } = req.body;
+
+  codigo_producto = codigo_producto?.trim();
+  cantidad = Number.parseInt(cantidad, 10);
+  const id_usuario = Number.parseInt(req.user.id_usuario, 10);
+  observaciones = observaciones?.trim() || "";
+
+  if (!codigo_producto || Number.isNaN(cantidad) || cantidad <= 0) {
+    return error(req, res, 400, "Código del producto y cantidad son obligatorios");
+  }
+
+  let connection;
+
+  try {
+    connection = await conIdentidad(poolBetrost, req);
+
+    const [[usuario]] = await connection.query(
+      `SELECT id_usuario FROM usuarios WHERE id_usuario = ? LIMIT 1`,
+      [id_usuario],
+    );
+
+    if (!usuario) {
+      return error(req, res, 404, "Usuario no existe");
+    }
+
+    const [[producto]] = await connection.query(
+      `
+      SELECT id_producto
+      FROM productos
+      WHERE codigo = ? AND estado = 'ACTIVO'
+      LIMIT 1
+      `,
+      [codigo_producto],
+    );
+
+    if (!producto) {
+      return error(req, res, 404, "Producto no encontrado");
+    }
+
+    await connection.query(
+      `CALL sp_consumo_terminada_proceso(?, ?, ?, ?, ?, ?, @mensaje);`,
+      [
+        BODEGA_TERMINADA_PROCESO,
+        BODEGA_TERMINADA_COMPLETO,
+        codigo_producto,
+        cantidad,
+        id_usuario,
+        observaciones,
+      ],
+    );
+
+    const [[mensajeResult]] = await connection.query(`SELECT @mensaje AS mensaje;`);
+    const mensaje = mensajeResult?.mensaje || "Respuesta desconocida";
+
+    const esError = ["insuficiente", "error", "no existe", "no encontrado"].some((texto) =>
+      mensaje.toLowerCase().includes(texto),
+    );
+
+    if (esError) {
+      return error(req, res, 400, mensaje);
+    }
+
+    return success(
+      req,
+      res,
+      200,
+      { mensaje, codigo_producto, cantidad },
+      "CONSUMO A TERMINADA COMPLETO EXITOSO",
+    );
+  } catch (err) {
+    console.error("Error ejecutando consumo terminada proceso:", err);
+    return error(req, res, 500, "Error interno del servidor al consumir a Terminada Completo");
+  } finally {
+    if (connection) connection.release();
+  }
+};
 
 const activar_catalogo = async (req,res)=>{
 
+const { id_catalogo } = req.body;
 
-const {id_catalogo}=req.body;
-
-
+if (!id_catalogo) {
+  return res.status(400).json({
+    ok: false,
+    mensaje: "El id_catalogo es obligatorio"
+  });
+}
 
 try{
 
+const [previo]=await poolBetrost.query(
+  `SELECT estado FROM catalogo_productos WHERE id_catalogo = ?`,
+  [id_catalogo]
+);
 
 const [resultado]=await poolBetrost.query(
 
@@ -1262,6 +1463,16 @@ WHERE id_catalogo=?
 
 
 );
+
+if (previo[0]) {
+  await registrarAuditoria(poolBetrost, req, {
+    tabla: "catalogo_productos",
+    accion: "CAMBIAR_ESTADO",
+    id_registro: id_catalogo,
+    datos_antes: recortarFila(previo[0], ["estado"]),
+    datos_despues: { estado: "ACTIVO" },
+  });
+}
 
 
 
@@ -1316,4 +1527,6 @@ export {
   activar_catalogo,
   consultarConsumoLogistica,
   ejecutarConsumoLogistica,
+  consultarConsumoTerminadaProceso,
+  ejecutarConsumoTerminadaProceso,
 };

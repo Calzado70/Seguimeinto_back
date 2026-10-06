@@ -15,7 +15,8 @@ export const success = (req, res, status=200, body ,message = null) => {
 
 
 export const error = (req, res, status=500, err) => {
-    res.status(status).json({ error: true, status, error: err.message || err });
+    const message = (err && err.message) ? err.message : err;
+    res.status(status).json({ error: message, status, message });
 };
 
 

@@ -69,6 +69,14 @@ BEGIN
         ELSE
             -- Mantener el mismo producto original
             SET v_id_producto_destino = p_id_producto;
+
+            -- Guardar característica si viene informada (Terminada Proceso)
+            IF TRIM(p_caracteristica) <> '' THEN
+                UPDATE productos
+                SET caracteristica = TRIM(p_caracteristica),
+                    estado = 'ACTIVO'
+                WHERE id_producto = v_id_producto_destino;
+            END IF;
         END IF;
 
         -- 4. Sumar a bodega destino

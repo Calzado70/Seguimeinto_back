@@ -1,0 +1,32 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports["default"] = void 0;
+var _promise = require("mysql2/promise");
+var _dotenv = require("dotenv");
+(0, _dotenv.config)();
+
+// const pool = createPool({
+//     host: process.env.MYSQL_HOST,
+//     user: process.env.MYSQL_USER,
+//     password: process.env.MYSQL_PASSWORD,
+//     port: process.env.MYSQL_PORT,
+//     database: process.env.MYSQL_DATABASE,
+// });
+
+// Pool para la base de datos "betrost"
+var poolBetrost = (0, _promise.createPool)({
+  host: process.env.MYSQL_HOST,
+  user: process.env.MYSQL_USER,
+  password: process.env.MYSQL_PASSWORD,
+  port: process.env.MYSQL_PORT,
+  database: process.env.MYSQL_DATABASE_BETROST,
+  multipleStatements: false,
+  charset: 'utf8mb4_unicode_ci',
+  connectionLimit: 10,
+  waitForConnections: true,
+  enableKeepAlive: true
+});
+var _default = exports["default"] = poolBetrost;

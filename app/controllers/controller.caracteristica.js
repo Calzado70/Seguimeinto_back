@@ -1,5 +1,6 @@
 import poolBetrost from "../config/mysql.db";
 import { success, error } from "../messages/browser";
+import { recortarFila, registrarAuditoria } from "../utils/auditoria";
 import { config } from "dotenv";
 config();
 
@@ -35,6 +36,13 @@ const crear = async (req, res) => {
         );
 
         if (respuesta.affectedRows === 1) {
+            await registrarAuditoria(poolBetrost, req, {
+                tabla: "caracteristicas",
+                accion: "CREAR",
+                id_registro: respuesta.insertId ?? null,
+                datos_despues: { valor: valorNormalizado, estado: "ACTIVA" },
+            });
+
             return success(
                 req,
                 res,
@@ -62,12 +70,25 @@ const modificar = async (req, res) => {
     const valorNormalizado = valor.trim().toUpperCase();
 
     try {
+        const [previo] = await poolBetrost.query(
+            `SELECT valor, estado FROM caracteristicas WHERE id = ?`,
+            [id]
+        );
+
         const [respuesta] = await poolBetrost.query(
             `UPDATE caracteristicas SET valor = ?, estado = ? WHERE id = ?`,
             [valorNormalizado, estado, id]
         );
 
         if (respuesta.affectedRows === 1) {
+            await registrarAuditoria(poolBetrost, req, {
+                tabla: "caracteristicas",
+                accion: "MODIFICAR",
+                id_registro: id,
+                datos_antes: recortarFila(previo[0], ["valor", "estado"]),
+                datos_despues: { valor: valorNormalizado, estado },
+            });
+
             return success(req, res, 200, null, "Característica modificada correctamente");
         }
         error(req, res, 400, "No se pudo modificar la característica");
@@ -87,12 +108,24 @@ const eliminar = async (req, res) => {
     }
 
     try {
+        const [previo] = await poolBetrost.query(
+            `SELECT valor, estado FROM caracteristicas WHERE id = ?`,
+            [id]
+        );
+
         const [respuesta] = await poolBetrost.query(
             `DELETE FROM caracteristicas WHERE id = ?`,
             [id]
         );
 
         if (respuesta.affectedRows === 1) {
+            await registrarAuditoria(poolBetrost, req, {
+                tabla: "caracteristicas",
+                accion: "ELIMINAR",
+                id_registro: id,
+                datos_antes: recortarFila(previo[0], ["valor", "estado"]),
+            });
+
             return success(req, res, 200, null, "Característica eliminada correctamente");
         }
         error(req, res, 400, "No se pudo eliminar la característica");

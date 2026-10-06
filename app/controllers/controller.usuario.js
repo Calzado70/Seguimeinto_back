@@ -20,7 +20,7 @@ const mostar = async (req, res) => {
 };
 
 const obtenerUsuarioPorId = async (req, res) => {
-  const { id_usuario } = req.body;
+  const { id: id_usuario } = req.params;
 
   try {
     const rows = await poolBetrost.query(`CALL sp_mostrar_usuario_id(?);`,
@@ -37,7 +37,7 @@ const obtenerUsuarioPorId = async (req, res) => {
 const eliminar = async (req, res) => {
     const {id_usuario} = req.body;
     try {
-        const respuesta = await poolBetrost.query(`CALL sp_eliminar_usuario("${id_usuario}");`);
+        const respuesta = await poolBetrost.query(`CALL sp_eliminar_usuario(?);`, [id_usuario]);
         if (respuesta[0].affectedRows == 1){
             success(req, res, 200, "Usuario eliminado correctamente");
         } else {

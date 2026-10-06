@@ -170,7 +170,7 @@ const eliminar = async (req, res) => {
     }
 
     try {
-        const respuesta = await poolBetrost.query(`CALL sp_eliminar_bodega("${id_bodega}");`);
+        const respuesta = await poolBetrost.query(`CALL sp_eliminar_bodega(?);`, [id_bodega]);
 
         if (respuesta[0].affectedRows === 1) {
             success(req, res, 201, "Bodega eliminada correctamente");

@@ -19,8 +19,11 @@ const poolBetrost = createPool({
     password: process.env.MYSQL_PASSWORD,
     port: process.env.MYSQL_PORT,
     database: process.env.MYSQL_DATABASE_BETROST,
-    multipleStatements: true,
-    charset: 'utf8mb4_general_ci' // Soporte para emojis y caracteres especiales
+    multipleStatements: false,
+    charset: 'utf8mb4_unicode_ci',
+    connectionLimit: 10,
+    waitForConnections: true,
+    enableKeepAlive: true,
 });
 
 

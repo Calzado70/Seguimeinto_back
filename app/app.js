@@ -2,14 +2,27 @@ import express from "express";
 import {config} from "dotenv";
 import cors from "cors";
 import morgan from "morgan";
+import helmet from "helmet";
 import ruta from "./routers/index.js";
+import { limiterGeneral, limiterLogin } from "./middleware/rateLimit.js";
 
 config();
 
 const app = express();
 
-app.use(morgan("dev"));
-app.use(express.json());
+app.use(helmet());
+
+app.use(limiterGeneral);
+
+const isProd = process.env.NODE_ENV === "production";
+
+if (!isProd) {
+    app.use(morgan("dev"));
+} else {
+    app.use(morgan("combined"));
+}
+
+app.use(express.json({ limit: "1mb" }));
 
 // Configuración CORS mejorada para desarrollo y producción local
 const corsOptions = {
@@ -74,15 +87,9 @@ app.use(cors(corsOptions));
 app.use((req, res, next) => {
     const timestamp = new Date().toISOString();
     const origin = req.headers.origin || req.headers.host || 'No origin';
-    const userAgent = req.headers['user-agent'] || 'No user-agent';
-    
+
     console.log(`[${timestamp}] ${req.method} ${req.originalUrl} - Origin: ${origin}`);
-    
-    // Log solo en desarrollo para no saturar logs de producción
-    if (process.env.NODE_ENV !== 'production') {
-        console.log(`Headers: ${JSON.stringify(req.headers, null, 2)}`);
-    }
-    
+
     next();
 });
 
