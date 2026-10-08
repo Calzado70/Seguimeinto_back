@@ -36,7 +36,7 @@ rutaProducto.get("/consumo-terminada-proceso", verifyToken, consultarConsumoTerm
 rutaProducto.post("/inicio", verifyToken, iniciar_sesion_escaneo);
 rutaProducto.post("/agregar", verifyToken, agregar_producto_sesion);
 rutaProducto.post("/crear", verifyToken, crear_producto);
-rutaProducto.post("/consultar", verifyToken, consultarCodigo);
+rutaProducto.post("/consultar", consultarCodigo);
 
 
 // METODO PUT -- ACTUALIZAR
