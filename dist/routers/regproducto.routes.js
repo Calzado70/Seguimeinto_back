@@ -21,7 +21,7 @@ rutaProducto.get("/consumo-terminada-proceso", _oauth.verifyToken, _controller.c
 rutaProducto.post("/inicio", _oauth.verifyToken, _controller.iniciar_sesion_escaneo);
 rutaProducto.post("/agregar", _oauth.verifyToken, _controller.agregar_producto_sesion);
 rutaProducto.post("/crear", _oauth.verifyToken, _controller.crear_producto);
-rutaProducto.post("/consultar", _oauth.verifyToken, _controller.consultarCodigo);
+rutaProducto.post("/consultar", _controller.consultarCodigo);
 
 // METODO PUT -- ACTUALIZAR
 rutaProducto.put("/finalizar", _oauth.verifyToken, _controller.finalizarSesionEscaneo);
