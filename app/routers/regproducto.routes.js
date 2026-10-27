@@ -2,6 +2,7 @@ import { Router } from "express";
 import { actualizarCaracteristica, 
     agregar_producto_sesion, 
     ajustarInventario, 
+    ajustarInventarioLote,
     cancelar_sesion_escaneo, 
     consultar_inventario, 
     consultar_movimientos, 
@@ -15,15 +16,17 @@ import { actualizarCaracteristica,
     finalizarProductoTerminada, 
     finalizarSesionEscaneo, 
     iniciar_sesion_escaneo, 
+    listar_productos,
     obtener_detalle_sesion, 
     transferirProducto } from "../controllers/controller.producto";
-import { verifyToken } from "../middleware/oauth";
+import { verifyToken, verifyAdministrador } from "../middleware/oauth";
 
 
 const rutaProducto = Router();
 
 
 // METODO GET -- CONSULTAS
+rutaProducto.get("/listar", verifyToken, listar_productos);
 rutaProducto.get("/inventario", verifyToken, consultar_inventario);
 rutaProducto.get("/stock", verifyToken, consultar_stock);
 rutaProducto.get("/movi", verifyToken, consultar_movimientos);
@@ -44,6 +47,7 @@ rutaProducto.put("/finalizar", verifyToken, finalizarSesionEscaneo);
 rutaProducto.put("/transferencia", verifyToken, transferirProducto);
 rutaProducto.put("/finalizar-terminada", verifyToken, finalizarProductoTerminada);
 rutaProducto.put('/ajustar', verifyToken, ajustarInventario);
+rutaProducto.put('/ajustar-lote', verifyToken, verifyAdministrador, ajustarInventarioLote);
 rutaProducto.put('/actualizar', verifyToken, actualizarCaracteristica);
 rutaProducto.put("/consumo-logistica", verifyToken, ejecutarConsumoLogistica);
 rutaProducto.put("/consumo-terminada-proceso", verifyToken, ejecutarConsumoTerminadaProceso);

@@ -10,6 +10,7 @@ var _oauth = require("../middleware/oauth");
 var rutaProducto = (0, _express.Router)();
 
 // METODO GET -- CONSULTAS
+rutaProducto.get("/listar", _oauth.verifyToken, _controller.listar_productos);
 rutaProducto.get("/inventario", _oauth.verifyToken, _controller.consultar_inventario);
 rutaProducto.get("/stock", _oauth.verifyToken, _controller.consultar_stock);
 rutaProducto.get("/movi", _oauth.verifyToken, _controller.consultar_movimientos);
@@ -28,6 +29,7 @@ rutaProducto.put("/finalizar", _oauth.verifyToken, _controller.finalizarSesionEs
 rutaProducto.put("/transferencia", _oauth.verifyToken, _controller.transferirProducto);
 rutaProducto.put("/finalizar-terminada", _oauth.verifyToken, _controller.finalizarProductoTerminada);
 rutaProducto.put('/ajustar', _oauth.verifyToken, _controller.ajustarInventario);
+rutaProducto.put('/ajustar-lote', _oauth.verifyToken, _oauth.verifyAdministrador, _controller.ajustarInventarioLote);
 rutaProducto.put('/actualizar', _oauth.verifyToken, _controller.actualizarCaracteristica);
 rutaProducto.put("/consumo-logistica", _oauth.verifyToken, _controller.ejecutarConsumoLogistica);
 rutaProducto.put("/consumo-terminada-proceso", _oauth.verifyToken, _controller.ejecutarConsumoTerminadaProceso);

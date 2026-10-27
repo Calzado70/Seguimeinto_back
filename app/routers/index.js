@@ -6,6 +6,7 @@ import rutaProducto from "./regproducto.routes.js";
 import rutaHistorial from "./historial.routes.js";
 import rutaCatalogo from "./catalogo.routes.js";
 import rutaCaracteristica from "./regcaracteristica.routes.js";
+import rutaImportacion from "./importacion.routes.js";
 
 const ruta = Router();
 
@@ -16,6 +17,7 @@ ruta.use("/product", rutaProducto);
 ruta.use("/hist", rutaHistorial);
 ruta.use("/catalogo", rutaCatalogo);
 ruta.use("/caracter", rutaCaracteristica);
+ruta.use("/import", rutaImportacion);
 
 
 ruta.use("/", (req, res) => {res.json({"respuesta": messageBrowse.principal})});

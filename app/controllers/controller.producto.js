@@ -388,6 +388,7 @@ const PREFIJOS_BODEGA = {
   3: "PPI",
   4: "PPV",
   5: "PPG",
+  6: "",
   7: "PPG",
   8: "PPG",
   9: "PPG",
@@ -405,10 +406,14 @@ const PREFIJOS_BODEGA = {
   21: "PPM",
   22: "PPV",
   23: "PPG",
+  25: "",
 };
 
 const obtenerPrefijoBodega = (idBodegaOrigen) => {
-  return PREFIJOS_BODEGA[idBodegaOrigen] || "PPG";
+  const clave = Number(idBodegaOrigen);
+  return Object.prototype.hasOwnProperty.call(PREFIJOS_BODEGA, clave)
+    ? PREFIJOS_BODEGA[clave]
+    : "PPG";
 };
 
 const construirCodigoModificado = (codigoProducto, caracteristica = "") => {
@@ -447,7 +452,9 @@ const transferirProducto = async (req, res) => {
 
     id_bodega_origen = Number.parseInt(id_bodega_origen, 10);
     id_bodega_destino = Number.parseInt(id_bodega_destino, 10);
-    cantidad = Number.parseInt(cantidad, 10);
+    // La vista de transferencias cuenta medias unidades (0.5 = una lengua de
+    // zapato; dos lenguas = 1 par), por eso se acepta un decimal.
+    cantidad = Math.round(Number(cantidad) * 10) / 10;
     const id_usuario = Number.parseInt(req.user.id_usuario, 10);
     codigo_producto = codigo_producto?.trim();
     observaciones = observaciones?.trim() || "";
@@ -741,39 +748,218 @@ const finalizarProductoTerminada = async (req, res) => {
   }
 };
 
+// Ajusta el inventario de un producto en una bodega a una cantidad contada
+// en físico. El enum de movimientos.tipo_movimiento no incluye 'AJUSTE', por
+// eso se registra como 'ENTRADA' con el delta (positivo o negativo), igual
+// que la importación de saldos. Devuelve el detalle del ajuste aplicado.
+async function aplicarAjuste(connection, req, {
+  id_bodega,
+  id_producto,
+  codigo_producto,
+  cantidadFisica,
+  idUsuario,
+  motivo,
+}) {
+  let producto;
+
+  if (Number.isInteger(id_producto)) {
+    [[producto]] = await connection.query(
+      `SELECT id_producto, codigo FROM productos WHERE id_producto = ? AND estado = 'ACTIVO' LIMIT 1`,
+      [id_producto],
+    );
+  } else {
+    [[producto]] = await connection.query(
+      `SELECT id_producto, codigo FROM productos WHERE codigo = ? AND estado = 'ACTIVO' LIMIT 1`,
+      [codigo_producto],
+    );
+  }
+
+  if (!producto) {
+    throw new Error(`Producto "${codigo_producto ?? id_producto}" no encontrado`);
+  }
+
+  const [[existente]] = await connection.query(
+    `SELECT cantidad_disponible FROM inventario
+     WHERE id_producto = ? AND id_bodega = ? FOR UPDATE`,
+    [producto.id_producto, id_bodega],
+  );
+  const cantidadAnterior = Number(existente?.cantidad_disponible) || 0;
+  const diferencia = cantidadFisica - cantidadAnterior;
+
+  if (diferencia === 0) {
+    return {
+      id_producto: producto.id_producto,
+      codigo: producto.codigo,
+      anterior: cantidadAnterior,
+      fisico: cantidadFisica,
+      diferencia: 0,
+      estado: "sin_cambios",
+    };
+  }
+
+  await connection.query(
+    `INSERT INTO inventario (id_producto, id_bodega, cantidad_disponible)
+     VALUES (?, ?, ?)
+     ON DUPLICATE KEY UPDATE
+       cantidad_disponible = VALUES(cantidad_disponible),
+       fecha_actualizacion = CURRENT_TIMESTAMP`,
+    [producto.id_producto, id_bodega, cantidadFisica],
+  );
+
+  const observaciones = construirObservacionFinal({
+    observaciones: motivo,
+    idBodegaOrigen: id_bodega,
+    codigoProducto: producto.codigo,
+    caracteristica: "",
+  });
+
+  await connection.query(
+    `INSERT INTO movimientos
+       (id_producto, id_bodega_destino, id_usuario_responsable, tipo_movimiento, cantidad, observaciones)
+     VALUES (?, ?, ?, 'ENTRADA', ?, ?)`,
+    [producto.id_producto, id_bodega, idUsuario, diferencia, observaciones],
+  );
+
+  await registrarAuditoria(connection, req, {
+    tabla: "inventario",
+    accion: "AJUSTE",
+    datos_despues: {
+      codigo: producto.codigo,
+      id_bodega,
+      cantidad_anterior: cantidadAnterior,
+      cantidad_nueva: cantidadFisica,
+      diferencia,
+    },
+  });
+
+  return {
+    id_producto: producto.id_producto,
+    codigo: producto.codigo,
+    anterior: cantidadAnterior,
+    fisico: cantidadFisica,
+    diferencia,
+    estado: "ajustado",
+  };
+}
+
 const ajustarInventario = async (req, res) => {
   const { id_bodega, codigo_producto, nueva_cantidad, motivo } = req.body;
 
+  const idBodega = Number.parseInt(id_bodega, 10);
+  const cantidadFisica = Number.parseInt(nueva_cantidad, 10);
+
   if (
-    !id_bodega ||
+    !Number.isInteger(idBodega) ||
     !codigo_producto ||
-    nueva_cantidad === undefined
+    Number.isNaN(cantidadFisica) ||
+    cantidadFisica < 0
   ) {
-    return res.status(400).json({ error: "Faltan campos obligatorios" });
+    return error(req, res, 400, "Faltan campos obligatorios o cantidad inválida");
   }
 
-  const id_usuario = Number.parseInt(req.user.id_usuario, 10);
+  const idUsuario = Number.parseInt(req.user.id_usuario, 10);
+  let connection;
 
   try {
-    const connection = await conIdentidad(poolBetrost, req);
-    try {
-      await connection.query(
-        `CALL sp_ajustar_inventario(?, ?, ?, ?, ?, @mensaje);`,
-        [id_bodega, codigo_producto, nueva_cantidad, id_usuario, motivo || ""],
-      );
+    connection = await conIdentidad(poolBetrost, req);
+    await connection.beginTransaction();
 
-      const [[{ mensaje }]] = await connection.query(
-        `SELECT @mensaje AS mensaje;`,
-      );
-      res.status(200).json({ mensaje });
-    } finally {
-      connection.release();
-    }
-  } catch (error) {
-    console.error("Error al ajustar inventario:", error);
-    res.status(500).json({ error: "Error interno al ajustar inventario" });
+    const resultado = await aplicarAjuste(connection, req, {
+      id_bodega: idBodega,
+      codigo_producto,
+      cantidadFisica,
+      idUsuario,
+      motivo: normalizarMotivo(motivo),
+    });
+
+    await connection.commit();
+
+    return success(req, res, 200, {
+      mensaje: `Inventario ajustado. Anterior: ${resultado.anterior}, Nuevo: ${resultado.fisico}`,
+      ...resultado,
+    });
+  } catch (e) {
+    await connection?.rollback().catch(() => {});
+    console.error("Error al ajustar inventario:", e);
+    return error(req, res, 400, e.message || "Error interno al ajustar inventario");
+  } finally {
+    connection?.release();
   }
 };
+
+// Ajuste por lote (toma física): fija la cantidad contada de varios productos
+// de una bodega en una sola transacción. `ajustes` = [{ id_producto, codigo,
+// cantidad_fisica }]. Solo aplica las filas cuya cantidad difiere del sistema.
+const ajustarInventarioLote = async (req, res) => {
+  const { id_bodega, motivo, ajustes } = req.body || {};
+
+  const idBodega = Number.parseInt(id_bodega, 10);
+  const motivoTexto = normalizarMotivo(motivo);
+
+  if (!Number.isInteger(idBodega)) {
+    return error(req, res, 400, "La bodega es obligatoria.");
+  }
+  if (!motivoTexto) {
+    return error(req, res, 400, "El motivo del ajuste es obligatorio.");
+  }
+  if (!Array.isArray(ajustes) || ajustes.length === 0) {
+    return error(req, res, 400, "Debe enviar al menos un producto a ajustar.");
+  }
+  if (ajustes.length > 2000) {
+    return error(req, res, 400, "Máximo 2000 productos por ajuste.");
+  }
+
+  const idUsuario = Number.parseInt(req.user.id_usuario, 10);
+  let connection;
+
+  try {
+    connection = await conIdentidad(poolBetrost, req);
+    await connection.beginTransaction();
+
+    const resultados = [];
+
+    for (const item of ajustes) {
+      const cantidadFisica = Number.parseInt(item.cantidad_fisica, 10);
+      if (Number.isNaN(cantidadFisica) || cantidadFisica < 0) {
+        throw new Error(`Cantidad inválida para "${item.codigo ?? item.id_producto}".`);
+      }
+
+      const resultado = await aplicarAjuste(connection, req, {
+        id_bodega: idBodega,
+        id_producto: Number.isInteger(item.id_producto)
+          ? item.id_producto
+          : Number.parseInt(item.id_producto, 10),
+        codigo_producto: item.codigo,
+        cantidadFisica,
+        idUsuario,
+        motivo: motivoTexto,
+      });
+
+      resultados.push(resultado);
+    }
+
+    await connection.commit();
+
+    const ajustadas = resultados.filter((r) => r.estado === "ajustado").length;
+
+    return success(req, res, 200, {
+      mensaje: `Ajuste aplicado: ${ajustadas} producto(s) con diferencia.`,
+      total: resultados.length,
+      ajustadas,
+      resultados,
+    });
+  } catch (e) {
+    await connection?.rollback().catch(() => {});
+    console.error("Error al ajustar inventario por lote:", e);
+    return error(req, res, 400, e.message || "Error interno al ajustar inventario");
+  } finally {
+    connection?.release();
+  }
+};
+
+function normalizarMotivo(valor) {
+  return String(valor ?? "").trim();
+}
 
 const crear_producto = async (req, res) => {
   let { codigo, caracteristica } = req.body;
@@ -937,6 +1123,56 @@ LIMIT ? OFFSET ?`,
     console.error(err);
 
     return error(req, res, 500, "Error consultando catálogo");
+  }
+};
+
+// Listado paginado de la tabla `productos` (maestro de productos), con
+// búsqueda por código/característica y filtro opcional por estado.
+const listar_productos = async (req, res) => {
+  const { limit, offset } = normalizarPaginacion(req.query);
+
+  const busqueda = (req.query.buscar || "").trim();
+  const estado = (req.query.estado || "").trim().toUpperCase();
+
+  const condiciones = [];
+  const params = [];
+
+  if (busqueda) {
+    condiciones.push("(codigo LIKE ? OR caracteristica LIKE ?)");
+    params.push(`%${busqueda}%`, `%${busqueda}%`);
+  }
+
+  if (estado === "ACTIVO" || estado === "INACTIVO") {
+    condiciones.push("estado = ?");
+    params.push(estado);
+  }
+
+  const where = condiciones.join(" AND ");
+
+  try {
+    const total = await contarFilas(poolBetrost, "productos", where, params);
+
+    const [rows] = await poolBetrost.query(
+      `SELECT
+        id_producto,
+        codigo,
+        caracteristica,
+        estado,
+        fecha_creacion
+      FROM productos
+      ${where ? `WHERE ${where}` : ""}
+      ORDER BY id_producto DESC
+      LIMIT ? OFFSET ?`,
+      [...params, limit, offset],
+    );
+
+    enviarTotalCount(res, total);
+
+    return success(req, res, 200, rows);
+  } catch (err) {
+    console.error("Error al listar productos:", err);
+
+    return error(req, res, 500, "Error consultando productos");
   }
 };
 
@@ -1517,10 +1753,12 @@ export {
   transferirProducto,
   finalizarProductoTerminada,
   ajustarInventario,
+  ajustarInventarioLote,
   crear_producto,
   actualizarCaracteristica,
   consultarCodigo,
   listar_catalogo,
+  listar_productos,
   crear_catalogo,
   actualizar_catalogo,
   inhabilitar_catalogo,
