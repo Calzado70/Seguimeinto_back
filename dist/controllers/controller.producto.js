@@ -4,7 +4,7 @@ var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefau
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.transferirProducto = exports.obtener_detalle_sesion = exports.listar_productos = exports.listar_catalogo = exports.iniciar_sesion_escaneo = exports.inhabilitar_catalogo = exports.finalizarSesionEscaneo = exports.finalizarProductoTerminada = exports.ejecutarConsumoTerminadaProceso = exports.ejecutarConsumoLogistica = exports.crear_producto = exports.crear_catalogo = exports.consultar_stock = exports.consultar_movimientos = exports.consultar_inventario = exports.consultarConsumoTerminadaProceso = exports.consultarConsumoLogistica = exports.consultarCodigo = exports.cancelar_sesion_escaneo = exports.ajustarInventarioLote = exports.ajustarInventario = exports.agregar_producto_sesion = exports.actualizar_catalogo = exports.actualizarCaracteristica = exports.activar_catalogo = void 0;
+exports.transferirProducto = exports.obtener_detalle_sesion = exports.listar_productos = exports.listar_catalogo = exports.iniciar_sesion_escaneo = exports.inhabilitar_catalogo = exports.finalizarSesionEscaneo = exports.finalizarProductoTerminada = exports.ejecutarConsumoTerminadaProceso = exports.ejecutarConsumoLogistica = exports.crear_producto = exports.crear_catalogo = exports.consultar_stock = exports.consultar_movimientos = exports.consultar_inventario = exports.consultarSku = exports.consultarConsumoTerminadaProceso = exports.consultarConsumoLogistica = exports.consultarCodigo = exports.cancelar_sesion_escaneo = exports.ajustarInventarioLote = exports.ajustarInventario = exports.agregar_producto_sesion = exports.actualizar_catalogo = exports.actualizarCaracteristica = exports.activar_catalogo = void 0;
 var _regenerator = _interopRequireDefault(require("@babel/runtime/regenerator"));
 var _toConsumableArray2 = _interopRequireDefault(require("@babel/runtime/helpers/toConsumableArray"));
 var _defineProperty2 = _interopRequireDefault(require("@babel/runtime/helpers/defineProperty"));
@@ -798,54 +798,54 @@ function aplicarAjuste(_x19, _x20, _x21) {
   return _aplicarAjuste.apply(this, arguments);
 }
 function _aplicarAjuste() {
-  _aplicarAjuste = (0, _asyncToGenerator2["default"])(/*#__PURE__*/_regenerator["default"].mark(function _callee24(connection, req, _ref10) {
+  _aplicarAjuste = (0, _asyncToGenerator2["default"])(/*#__PURE__*/_regenerator["default"].mark(function _callee25(connection, req, _ref10) {
     var id_bodega, id_producto, codigo_producto, cantidadFisica, idUsuario, motivo, producto, _yield$connection$que42, _yield$connection$que43, _yield$connection$que44, _yield$connection$que45, _yield$connection$que46, _yield$connection$que47, _yield$connection$que48, _yield$connection$que49, _yield$connection$que50, existente, cantidadAnterior, diferencia, observaciones;
-    return _regenerator["default"].wrap(function (_context24) {
-      while (1) switch (_context24.prev = _context24.next) {
+    return _regenerator["default"].wrap(function (_context25) {
+      while (1) switch (_context25.prev = _context25.next) {
         case 0:
           id_bodega = _ref10.id_bodega, id_producto = _ref10.id_producto, codigo_producto = _ref10.codigo_producto, cantidadFisica = _ref10.cantidadFisica, idUsuario = _ref10.idUsuario, motivo = _ref10.motivo;
           if (!Number.isInteger(id_producto)) {
-            _context24.next = 2;
+            _context25.next = 2;
             break;
           }
-          _context24.next = 1;
+          _context25.next = 1;
           return connection.query("SELECT id_producto, codigo FROM productos WHERE id_producto = ? AND estado = 'ACTIVO' LIMIT 1", [id_producto]);
         case 1:
-          _yield$connection$que42 = _context24.sent;
+          _yield$connection$que42 = _context25.sent;
           _yield$connection$que43 = (0, _slicedToArray2["default"])(_yield$connection$que42, 1);
           _yield$connection$que44 = (0, _slicedToArray2["default"])(_yield$connection$que43[0], 1);
           producto = _yield$connection$que44[0];
-          _context24.next = 4;
+          _context25.next = 4;
           break;
         case 2:
-          _context24.next = 3;
+          _context25.next = 3;
           return connection.query("SELECT id_producto, codigo FROM productos WHERE codigo = ? AND estado = 'ACTIVO' LIMIT 1", [codigo_producto]);
         case 3:
-          _yield$connection$que45 = _context24.sent;
+          _yield$connection$que45 = _context25.sent;
           _yield$connection$que46 = (0, _slicedToArray2["default"])(_yield$connection$que45, 1);
           _yield$connection$que47 = (0, _slicedToArray2["default"])(_yield$connection$que46[0], 1);
           producto = _yield$connection$que47[0];
         case 4:
           if (producto) {
-            _context24.next = 5;
+            _context25.next = 5;
             break;
           }
           throw new Error("Producto \"".concat(codigo_producto !== null && codigo_producto !== void 0 ? codigo_producto : id_producto, "\" no encontrado"));
         case 5:
-          _context24.next = 6;
+          _context25.next = 6;
           return connection.query("SELECT cantidad_disponible FROM inventario\n     WHERE id_producto = ? AND id_bodega = ? FOR UPDATE", [producto.id_producto, id_bodega]);
         case 6:
-          _yield$connection$que48 = _context24.sent;
+          _yield$connection$que48 = _context25.sent;
           _yield$connection$que49 = (0, _slicedToArray2["default"])(_yield$connection$que48, 1);
           _yield$connection$que50 = (0, _slicedToArray2["default"])(_yield$connection$que49[0], 1);
           existente = _yield$connection$que50[0];
           cantidadAnterior = Number(existente === null || existente === void 0 ? void 0 : existente.cantidad_disponible) || 0;
           diferencia = cantidadFisica - cantidadAnterior;
           if (!(diferencia === 0)) {
-            _context24.next = 7;
+            _context25.next = 7;
             break;
           }
-          return _context24.abrupt("return", {
+          return _context25.abrupt("return", {
             id_producto: producto.id_producto,
             codigo: producto.codigo,
             anterior: cantidadAnterior,
@@ -854,7 +854,7 @@ function _aplicarAjuste() {
             estado: "sin_cambios"
           });
         case 7:
-          _context24.next = 8;
+          _context25.next = 8;
           return connection.query("INSERT INTO inventario (id_producto, id_bodega, cantidad_disponible)\n     VALUES (?, ?, ?)\n     ON DUPLICATE KEY UPDATE\n       cantidad_disponible = VALUES(cantidad_disponible),\n       fecha_actualizacion = CURRENT_TIMESTAMP", [producto.id_producto, id_bodega, cantidadFisica]);
         case 8:
           observaciones = construirObservacionFinal({
@@ -863,10 +863,10 @@ function _aplicarAjuste() {
             codigoProducto: producto.codigo,
             caracteristica: ""
           });
-          _context24.next = 9;
+          _context25.next = 9;
           return connection.query("INSERT INTO movimientos\n       (id_producto, id_bodega_destino, id_usuario_responsable, tipo_movimiento, cantidad, observaciones)\n     VALUES (?, ?, ?, 'ENTRADA', ?, ?)", [producto.id_producto, id_bodega, idUsuario, diferencia, observaciones]);
         case 9:
-          _context24.next = 10;
+          _context25.next = 10;
           return (0, _auditoria.registrarAuditoria)(connection, req, {
             tabla: "inventario",
             accion: "AJUSTE",
@@ -879,7 +879,7 @@ function _aplicarAjuste() {
             }
           });
         case 10:
-          return _context24.abrupt("return", {
+          return _context25.abrupt("return", {
             id_producto: producto.id_producto,
             codigo: producto.codigo,
             anterior: cantidadAnterior,
@@ -889,9 +889,9 @@ function _aplicarAjuste() {
           });
         case 11:
         case "end":
-          return _context24.stop();
+          return _context25.stop();
       }
-    }, _callee24);
+    }, _callee25);
   }));
   return _aplicarAjuste.apply(this, arguments);
 }
@@ -1251,11 +1251,78 @@ var consultarCodigo = exports.consultarCodigo = /*#__PURE__*/function () {
     return _ref16.apply(this, arguments);
   };
 }();
-var listar_catalogo = exports.listar_catalogo = /*#__PURE__*/function () {
+
+/**
+ * Consulta informativa de SKU para la pantalla de transferencia.
+ * Recibe { codigos: ["CI...", ...] } y devuelve solo los codigos que
+ * existen en sku_productos. El frontend muestra "NA" para el resto.
+ */
+var consultarSku = exports.consultarSku = /*#__PURE__*/function () {
   var _ref17 = (0, _asyncToGenerator2["default"])(/*#__PURE__*/_regenerator["default"].mark(function _callee14(req, res) {
-    var _normalizarPaginacion, limit, offset, busqueda, where, params, total, _yield$poolBetrost$qu21, _yield$poolBetrost$qu22, rows, _t15;
+    var _req$body8, entrada, codigos, _yield$poolBetrost$qu21, _yield$poolBetrost$qu22, rows, skus, _t15;
     return _regenerator["default"].wrap(function (_context14) {
       while (1) switch (_context14.prev = _context14.next) {
+        case 0:
+          _context14.prev = 0;
+          entrada = Array.isArray((_req$body8 = req.body) === null || _req$body8 === void 0 ? void 0 : _req$body8.codigos) ? req.body.codigos : [];
+          codigos = (0, _toConsumableArray2["default"])(new Set(entrada.map(function (codigo) {
+            return String(codigo !== null && codigo !== void 0 ? codigo : "").trim().toUpperCase();
+          }).filter(Boolean)));
+          if (codigos.length) {
+            _context14.next = 1;
+            break;
+          }
+          return _context14.abrupt("return", res.status(400).json({
+            ok: false,
+            mensaje: "Códigos requeridos"
+          }));
+        case 1:
+          if (!(codigos.length > 500)) {
+            _context14.next = 2;
+            break;
+          }
+          return _context14.abrupt("return", res.status(400).json({
+            ok: false,
+            mensaje: "Máximo 500 códigos por consulta"
+          }));
+        case 2:
+          _context14.next = 3;
+          return _mysql["default"].query("SELECT codigo, sku FROM sku_productos WHERE codigo IN (?)", [codigos]);
+        case 3:
+          _yield$poolBetrost$qu21 = _context14.sent;
+          _yield$poolBetrost$qu22 = (0, _slicedToArray2["default"])(_yield$poolBetrost$qu21, 1);
+          rows = _yield$poolBetrost$qu22[0];
+          skus = {};
+          rows.forEach(function (fila) {
+            skus[fila.codigo] = fila.sku;
+          });
+          return _context14.abrupt("return", res.status(200).json({
+            ok: true,
+            skus: skus
+          }));
+        case 4:
+          _context14.prev = 4;
+          _t15 = _context14["catch"](0);
+          console.error(_t15);
+          return _context14.abrupt("return", res.status(500).json({
+            ok: false,
+            mensaje: "Error interno"
+          }));
+        case 5:
+        case "end":
+          return _context14.stop();
+      }
+    }, _callee14, null, [[0, 4]]);
+  }));
+  return function consultarSku(_x32, _x33) {
+    return _ref17.apply(this, arguments);
+  };
+}();
+var listar_catalogo = exports.listar_catalogo = /*#__PURE__*/function () {
+  var _ref18 = (0, _asyncToGenerator2["default"])(/*#__PURE__*/_regenerator["default"].mark(function _callee15(req, res) {
+    var _normalizarPaginacion, limit, offset, busqueda, where, params, total, _yield$poolBetrost$qu23, _yield$poolBetrost$qu24, rows, _t16;
+    return _regenerator["default"].wrap(function (_context15) {
+      while (1) switch (_context15.prev = _context15.next) {
         case 0:
           _normalizarPaginacion = (0, _paginacion.normalizarPaginacion)(req.query), limit = _normalizarPaginacion.limit, offset = _normalizarPaginacion.offset; // El buscador del frontend filtra por estas mismas tres columnas, así
           // que el filtro viaja al servidor en lugar de recorrer la tabla entera
@@ -1263,42 +1330,42 @@ var listar_catalogo = exports.listar_catalogo = /*#__PURE__*/function () {
           busqueda = (req.query.buscar || "").trim();
           where = busqueda ? "(codigo_barras LIKE ? OR sku LIKE ? OR referencia LIKE ?)" : "";
           params = busqueda ? Array(3).fill("%".concat(busqueda, "%")) : [];
-          _context14.prev = 1;
-          _context14.next = 2;
+          _context15.prev = 1;
+          _context15.next = 2;
           return (0, _paginacion.contarFilas)(_mysql["default"], "catalogo_productos", where, params);
         case 2:
-          total = _context14.sent;
-          _context14.next = 3;
+          total = _context15.sent;
+          _context15.next = 3;
           return _mysql["default"].query("SELECT\n  id_catalogo,\n  referencia,\n  sku,\n  codigo_barras,\n  fecha_creacion,\n  estado\nFROM catalogo_productos\n".concat(where ? "WHERE ".concat(where) : "", "\nORDER BY id_catalogo DESC\nLIMIT ? OFFSET ?"), [].concat((0, _toConsumableArray2["default"])(params), [limit, offset]));
         case 3:
-          _yield$poolBetrost$qu21 = _context14.sent;
-          _yield$poolBetrost$qu22 = (0, _slicedToArray2["default"])(_yield$poolBetrost$qu21, 1);
-          rows = _yield$poolBetrost$qu22[0];
+          _yield$poolBetrost$qu23 = _context15.sent;
+          _yield$poolBetrost$qu24 = (0, _slicedToArray2["default"])(_yield$poolBetrost$qu23, 1);
+          rows = _yield$poolBetrost$qu24[0];
           (0, _paginacion.enviarTotalCount)(res, total);
-          return _context14.abrupt("return", (0, _browser.success)(req, res, 200, rows));
+          return _context15.abrupt("return", (0, _browser.success)(req, res, 200, rows));
         case 4:
-          _context14.prev = 4;
-          _t15 = _context14["catch"](1);
-          console.error(_t15);
-          return _context14.abrupt("return", (0, _browser.error)(req, res, 500, "Error consultando catálogo"));
+          _context15.prev = 4;
+          _t16 = _context15["catch"](1);
+          console.error(_t16);
+          return _context15.abrupt("return", (0, _browser.error)(req, res, 500, "Error consultando catálogo"));
         case 5:
         case "end":
-          return _context14.stop();
+          return _context15.stop();
       }
-    }, _callee14, null, [[1, 4]]);
+    }, _callee15, null, [[1, 4]]);
   }));
-  return function listar_catalogo(_x32, _x33) {
-    return _ref17.apply(this, arguments);
+  return function listar_catalogo(_x34, _x35) {
+    return _ref18.apply(this, arguments);
   };
 }();
 
 // Listado paginado de la tabla `productos` (maestro de productos), con
 // búsqueda por código/característica y filtro opcional por estado.
 var listar_productos = exports.listar_productos = /*#__PURE__*/function () {
-  var _ref18 = (0, _asyncToGenerator2["default"])(/*#__PURE__*/_regenerator["default"].mark(function _callee15(req, res) {
-    var _normalizarPaginacion2, limit, offset, busqueda, estado, condiciones, params, where, total, _yield$poolBetrost$qu23, _yield$poolBetrost$qu24, rows, _t16;
-    return _regenerator["default"].wrap(function (_context15) {
-      while (1) switch (_context15.prev = _context15.next) {
+  var _ref19 = (0, _asyncToGenerator2["default"])(/*#__PURE__*/_regenerator["default"].mark(function _callee16(req, res) {
+    var _normalizarPaginacion2, limit, offset, busqueda, estado, condiciones, params, where, total, _yield$poolBetrost$qu25, _yield$poolBetrost$qu26, rows, _t17;
+    return _regenerator["default"].wrap(function (_context16) {
+      while (1) switch (_context16.prev = _context16.next) {
         case 0:
           _normalizarPaginacion2 = (0, _paginacion.normalizarPaginacion)(req.query), limit = _normalizarPaginacion2.limit, offset = _normalizarPaginacion2.offset;
           busqueda = (req.query.buscar || "").trim();
@@ -1314,55 +1381,55 @@ var listar_productos = exports.listar_productos = /*#__PURE__*/function () {
             params.push(estado);
           }
           where = condiciones.join(" AND ");
-          _context15.prev = 1;
-          _context15.next = 2;
+          _context16.prev = 1;
+          _context16.next = 2;
           return (0, _paginacion.contarFilas)(_mysql["default"], "productos", where, params);
         case 2:
-          total = _context15.sent;
-          _context15.next = 3;
+          total = _context16.sent;
+          _context16.next = 3;
           return _mysql["default"].query("SELECT\n        id_producto,\n        codigo,\n        caracteristica,\n        estado,\n        fecha_creacion\n      FROM productos\n      ".concat(where ? "WHERE ".concat(where) : "", "\n      ORDER BY id_producto DESC\n      LIMIT ? OFFSET ?"), [].concat(params, [limit, offset]));
         case 3:
-          _yield$poolBetrost$qu23 = _context15.sent;
-          _yield$poolBetrost$qu24 = (0, _slicedToArray2["default"])(_yield$poolBetrost$qu23, 1);
-          rows = _yield$poolBetrost$qu24[0];
+          _yield$poolBetrost$qu25 = _context16.sent;
+          _yield$poolBetrost$qu26 = (0, _slicedToArray2["default"])(_yield$poolBetrost$qu25, 1);
+          rows = _yield$poolBetrost$qu26[0];
           (0, _paginacion.enviarTotalCount)(res, total);
-          return _context15.abrupt("return", (0, _browser.success)(req, res, 200, rows));
+          return _context16.abrupt("return", (0, _browser.success)(req, res, 200, rows));
         case 4:
-          _context15.prev = 4;
-          _t16 = _context15["catch"](1);
-          console.error("Error al listar productos:", _t16);
-          return _context15.abrupt("return", (0, _browser.error)(req, res, 500, "Error consultando productos"));
+          _context16.prev = 4;
+          _t17 = _context16["catch"](1);
+          console.error("Error al listar productos:", _t17);
+          return _context16.abrupt("return", (0, _browser.error)(req, res, 500, "Error consultando productos"));
         case 5:
         case "end":
-          return _context15.stop();
+          return _context16.stop();
       }
-    }, _callee15, null, [[1, 4]]);
+    }, _callee16, null, [[1, 4]]);
   }));
-  return function listar_productos(_x34, _x35) {
-    return _ref18.apply(this, arguments);
+  return function listar_productos(_x36, _x37) {
+    return _ref19.apply(this, arguments);
   };
 }();
 var crear_catalogo = exports.crear_catalogo = /*#__PURE__*/function () {
-  var _ref19 = (0, _asyncToGenerator2["default"])(/*#__PURE__*/_regenerator["default"].mark(function _callee16(req, res) {
-    var _req$body8, referencia, sku, codigo_barras, _resultado$insertId, _yield$poolBetrost$qu25, _yield$poolBetrost$qu26, resultado, _t17;
-    return _regenerator["default"].wrap(function (_context16) {
-      while (1) switch (_context16.prev = _context16.next) {
+  var _ref20 = (0, _asyncToGenerator2["default"])(/*#__PURE__*/_regenerator["default"].mark(function _callee17(req, res) {
+    var _req$body9, referencia, sku, codigo_barras, _resultado$insertId, _yield$poolBetrost$qu27, _yield$poolBetrost$qu28, resultado, _t18;
+    return _regenerator["default"].wrap(function (_context17) {
+      while (1) switch (_context17.prev = _context17.next) {
         case 0:
-          _req$body8 = req.body, referencia = _req$body8.referencia, sku = _req$body8.sku, codigo_barras = _req$body8.codigo_barras;
+          _req$body9 = req.body, referencia = _req$body9.referencia, sku = _req$body9.sku, codigo_barras = _req$body9.codigo_barras;
           if (!(!referencia || !sku || !codigo_barras)) {
-            _context16.next = 1;
+            _context17.next = 1;
             break;
           }
-          return _context16.abrupt("return", (0, _browser.error)(req, res, 400, "Todos los campos son obligatorios"));
+          return _context17.abrupt("return", (0, _browser.error)(req, res, 400, "Todos los campos son obligatorios"));
         case 1:
-          _context16.prev = 1;
-          _context16.next = 2;
+          _context17.prev = 1;
+          _context17.next = 2;
           return _mysql["default"].query("\nINSERT INTO catalogo_productos\n(\nreferencia,\nsku,\ncodigo_barras,\nfecha_creacion,\nestado\n)\n\nVALUES\n(?,?,?,NOW(),1)\n\n", [referencia, sku, codigo_barras]);
         case 2:
-          _yield$poolBetrost$qu25 = _context16.sent;
-          _yield$poolBetrost$qu26 = (0, _slicedToArray2["default"])(_yield$poolBetrost$qu25, 1);
-          resultado = _yield$poolBetrost$qu26[0];
-          _context16.next = 3;
+          _yield$poolBetrost$qu27 = _context17.sent;
+          _yield$poolBetrost$qu28 = (0, _slicedToArray2["default"])(_yield$poolBetrost$qu27, 1);
+          resultado = _yield$poolBetrost$qu28[0];
+          _context17.next = 3;
           return (0, _auditoria.registrarAuditoria)(_mysql["default"], req, {
             tabla: "catalogo_productos",
             accion: "CREAR",
@@ -1375,48 +1442,48 @@ var crear_catalogo = exports.crear_catalogo = /*#__PURE__*/function () {
             }
           });
         case 3:
-          return _context16.abrupt("return", (0, _browser.success)(req, res, 200, {
+          return _context17.abrupt("return", (0, _browser.success)(req, res, 200, {
             mensaje: "Producto agregado al catálogo"
           }));
         case 4:
-          _context16.prev = 4;
-          _t17 = _context16["catch"](1);
-          console.error(_t17);
-          if (!(_t17.errno === 1062)) {
-            _context16.next = 5;
+          _context17.prev = 4;
+          _t18 = _context17["catch"](1);
+          console.error(_t18);
+          if (!(_t18.errno === 1062)) {
+            _context17.next = 5;
             break;
           }
-          return _context16.abrupt("return", (0, _browser.error)(req, res, 400, "El código ya existe"));
+          return _context17.abrupt("return", (0, _browser.error)(req, res, 400, "El código ya existe"));
         case 5:
-          return _context16.abrupt("return", (0, _browser.error)(req, res, 500, "Error creando producto"));
+          return _context17.abrupt("return", (0, _browser.error)(req, res, 500, "Error creando producto"));
         case 6:
         case "end":
-          return _context16.stop();
+          return _context17.stop();
       }
-    }, _callee16, null, [[1, 4]]);
+    }, _callee17, null, [[1, 4]]);
   }));
-  return function crear_catalogo(_x36, _x37) {
-    return _ref19.apply(this, arguments);
+  return function crear_catalogo(_x38, _x39) {
+    return _ref20.apply(this, arguments);
   };
 }();
 var actualizar_catalogo = exports.actualizar_catalogo = /*#__PURE__*/function () {
-  var _ref20 = (0, _asyncToGenerator2["default"])(/*#__PURE__*/_regenerator["default"].mark(function _callee17(req, res) {
-    var _req$body9, id_catalogo, referencia, sku, codigo_barras, _yield$poolBetrost$qu27, _yield$poolBetrost$qu28, previo, _t18;
-    return _regenerator["default"].wrap(function (_context17) {
-      while (1) switch (_context17.prev = _context17.next) {
+  var _ref21 = (0, _asyncToGenerator2["default"])(/*#__PURE__*/_regenerator["default"].mark(function _callee18(req, res) {
+    var _req$body0, id_catalogo, referencia, sku, codigo_barras, _yield$poolBetrost$qu29, _yield$poolBetrost$qu30, previo, _t19;
+    return _regenerator["default"].wrap(function (_context18) {
+      while (1) switch (_context18.prev = _context18.next) {
         case 0:
-          _req$body9 = req.body, id_catalogo = _req$body9.id_catalogo, referencia = _req$body9.referencia, sku = _req$body9.sku, codigo_barras = _req$body9.codigo_barras;
-          _context17.prev = 1;
-          _context17.next = 2;
+          _req$body0 = req.body, id_catalogo = _req$body0.id_catalogo, referencia = _req$body0.referencia, sku = _req$body0.sku, codigo_barras = _req$body0.codigo_barras;
+          _context18.prev = 1;
+          _context18.next = 2;
           return _mysql["default"].query("SELECT referencia, sku, codigo_barras FROM catalogo_productos WHERE id_catalogo = ?", [id_catalogo]);
         case 2:
-          _yield$poolBetrost$qu27 = _context17.sent;
-          _yield$poolBetrost$qu28 = (0, _slicedToArray2["default"])(_yield$poolBetrost$qu27, 1);
-          previo = _yield$poolBetrost$qu28[0];
-          _context17.next = 3;
+          _yield$poolBetrost$qu29 = _context18.sent;
+          _yield$poolBetrost$qu30 = (0, _slicedToArray2["default"])(_yield$poolBetrost$qu29, 1);
+          previo = _yield$poolBetrost$qu30[0];
+          _context18.next = 3;
           return _mysql["default"].query("\n\nUPDATE catalogo_productos\n\nSET\n\nreferencia=?,\nsku=?,\ncodigo_barras=?\n\nWHERE id_catalogo=?\n\n\n", [referencia, sku, codigo_barras, id_catalogo]);
         case 3:
-          _context17.next = 4;
+          _context18.next = 4;
           return (0, _auditoria.registrarAuditoria)(_mysql["default"], req, {
             tabla: "catalogo_productos",
             accion: "MODIFICAR",
@@ -1429,63 +1496,63 @@ var actualizar_catalogo = exports.actualizar_catalogo = /*#__PURE__*/function ()
             }
           });
         case 4:
-          return _context17.abrupt("return", (0, _browser.success)(req, res, 200, {
+          return _context18.abrupt("return", (0, _browser.success)(req, res, 200, {
             mensaje: "Catálogo actualizado"
           }));
         case 5:
-          _context17.prev = 5;
-          _t18 = _context17["catch"](1);
-          console.error(_t18);
-          return _context17.abrupt("return", (0, _browser.error)(req, res, 500, "Error actualizando catálogo"));
+          _context18.prev = 5;
+          _t19 = _context18["catch"](1);
+          console.error(_t19);
+          return _context18.abrupt("return", (0, _browser.error)(req, res, 500, "Error actualizando catálogo"));
         case 6:
         case "end":
-          return _context17.stop();
+          return _context18.stop();
       }
-    }, _callee17, null, [[1, 5]]);
+    }, _callee18, null, [[1, 5]]);
   }));
-  return function actualizar_catalogo(_x38, _x39) {
-    return _ref20.apply(this, arguments);
+  return function actualizar_catalogo(_x40, _x41) {
+    return _ref21.apply(this, arguments);
   };
 }();
 var inhabilitar_catalogo = exports.inhabilitar_catalogo = /*#__PURE__*/function () {
-  var _ref21 = (0, _asyncToGenerator2["default"])(/*#__PURE__*/_regenerator["default"].mark(function _callee18(req, res) {
-    var id_catalogo, _yield$poolBetrost$qu29, _yield$poolBetrost$qu30, previo, _yield$poolBetrost$qu31, _yield$poolBetrost$qu32, resultado, _t19;
-    return _regenerator["default"].wrap(function (_context18) {
-      while (1) switch (_context18.prev = _context18.next) {
+  var _ref22 = (0, _asyncToGenerator2["default"])(/*#__PURE__*/_regenerator["default"].mark(function _callee19(req, res) {
+    var id_catalogo, _yield$poolBetrost$qu31, _yield$poolBetrost$qu32, previo, _yield$poolBetrost$qu33, _yield$poolBetrost$qu34, resultado, _t20;
+    return _regenerator["default"].wrap(function (_context19) {
+      while (1) switch (_context19.prev = _context19.next) {
         case 0:
           id_catalogo = req.body.id_catalogo;
           if (id_catalogo) {
-            _context18.next = 1;
+            _context19.next = 1;
             break;
           }
-          return _context18.abrupt("return", res.status(400).json({
+          return _context19.abrupt("return", res.status(400).json({
             ok: false,
             mensaje: "ID del producto requerido"
           }));
         case 1:
-          _context18.prev = 1;
-          _context18.next = 2;
+          _context19.prev = 1;
+          _context19.next = 2;
           return _mysql["default"].query("SELECT estado FROM catalogo_productos WHERE id_catalogo = ?", [id_catalogo]);
         case 2:
-          _yield$poolBetrost$qu29 = _context18.sent;
-          _yield$poolBetrost$qu30 = (0, _slicedToArray2["default"])(_yield$poolBetrost$qu29, 1);
-          previo = _yield$poolBetrost$qu30[0];
-          _context18.next = 3;
+          _yield$poolBetrost$qu31 = _context19.sent;
+          _yield$poolBetrost$qu32 = (0, _slicedToArray2["default"])(_yield$poolBetrost$qu31, 1);
+          previo = _yield$poolBetrost$qu32[0];
+          _context19.next = 3;
           return _mysql["default"].query("\n      UPDATE catalogo_productos\n      SET estado='INACTIVO'\n      WHERE id_catalogo=?\n      ", [id_catalogo]);
         case 3:
-          _yield$poolBetrost$qu31 = _context18.sent;
-          _yield$poolBetrost$qu32 = (0, _slicedToArray2["default"])(_yield$poolBetrost$qu31, 1);
-          resultado = _yield$poolBetrost$qu32[0];
+          _yield$poolBetrost$qu33 = _context19.sent;
+          _yield$poolBetrost$qu34 = (0, _slicedToArray2["default"])(_yield$poolBetrost$qu33, 1);
+          resultado = _yield$poolBetrost$qu34[0];
           if (!(resultado.affectedRows === 0)) {
-            _context18.next = 4;
+            _context19.next = 4;
             break;
           }
-          return _context18.abrupt("return", res.status(404).json({
+          return _context19.abrupt("return", res.status(404).json({
             ok: false,
             mensaje: "Producto no encontrado"
           }));
         case 4:
-          _context18.next = 5;
+          _context19.next = 5;
           return (0, _auditoria.registrarAuditoria)(_mysql["default"], req, {
             tabla: "catalogo_productos",
             accion: "CAMBIAR_ESTADO",
@@ -1496,26 +1563,26 @@ var inhabilitar_catalogo = exports.inhabilitar_catalogo = /*#__PURE__*/function 
             }
           });
         case 5:
-          return _context18.abrupt("return", res.status(200).json({
+          return _context19.abrupt("return", res.status(200).json({
             ok: true,
             mensaje: "Producto inhabilitado correctamente"
           }));
         case 6:
-          _context18.prev = 6;
-          _t19 = _context18["catch"](1);
-          console.error("ERROR INHABILITAR:", _t19);
-          return _context18.abrupt("return", res.status(500).json({
+          _context19.prev = 6;
+          _t20 = _context19["catch"](1);
+          console.error("ERROR INHABILITAR:", _t20);
+          return _context19.abrupt("return", res.status(500).json({
             ok: false,
             mensaje: "Error interno al inhabilitar producto"
           }));
         case 7:
         case "end":
-          return _context18.stop();
+          return _context19.stop();
       }
-    }, _callee18, null, [[1, 6]]);
+    }, _callee19, null, [[1, 6]]);
   }));
-  return function inhabilitar_catalogo(_x40, _x41) {
-    return _ref21.apply(this, arguments);
+  return function inhabilitar_catalogo(_x42, _x43) {
+    return _ref22.apply(this, arguments);
   };
 }();
 
@@ -1527,43 +1594,43 @@ var BODEGA_TERMINADA_COMPLETO = 25;
 var BODEGA_LOGISTICA = 27;
 var BODEGA_TERMINADA_PROCESO = 6;
 var consultarConsumoLogistica = exports.consultarConsumoLogistica = /*#__PURE__*/function () {
-  var _ref22 = (0, _asyncToGenerator2["default"])(/*#__PURE__*/_regenerator["default"].mark(function _callee19(req, res) {
-    var codigo_barras, barcode, _yield$poolBetrost$qu33, _yield$poolBetrost$qu34, rows, catalogo, talla, codigoProducto, _yield$poolBetrost$qu35, _yield$poolBetrost$qu36, productoRows, producto, _t20;
-    return _regenerator["default"].wrap(function (_context19) {
-      while (1) switch (_context19.prev = _context19.next) {
+  var _ref23 = (0, _asyncToGenerator2["default"])(/*#__PURE__*/_regenerator["default"].mark(function _callee20(req, res) {
+    var codigo_barras, barcode, _yield$poolBetrost$qu35, _yield$poolBetrost$qu36, rows, catalogo, talla, codigoProducto, _yield$poolBetrost$qu37, _yield$poolBetrost$qu38, productoRows, producto, _t21;
+    return _regenerator["default"].wrap(function (_context20) {
+      while (1) switch (_context20.prev = _context20.next) {
         case 0:
           codigo_barras = req.query.codigo_barras;
           if (!(!codigo_barras || typeof codigo_barras !== "string" || codigo_barras.trim() === "")) {
-            _context19.next = 1;
+            _context20.next = 1;
             break;
           }
-          return _context19.abrupt("return", (0, _browser.error)(req, res, 400, "El código de barras es obligatorio"));
+          return _context20.abrupt("return", (0, _browser.error)(req, res, 400, "El código de barras es obligatorio"));
         case 1:
           barcode = codigo_barras.trim();
-          _context19.prev = 2;
-          _context19.next = 3;
+          _context20.prev = 2;
+          _context20.next = 3;
           return _mysql["default"].query("\n      SELECT\n        id_catalogo,\n        referencia,\n        sku,\n        codigo_barras\n      FROM catalogo_productos\n      WHERE codigo_barras = ?\n      AND estado = 1\n      LIMIT 1\n      ", [barcode]);
         case 3:
-          _yield$poolBetrost$qu33 = _context19.sent;
-          _yield$poolBetrost$qu34 = (0, _slicedToArray2["default"])(_yield$poolBetrost$qu33, 1);
-          rows = _yield$poolBetrost$qu34[0];
+          _yield$poolBetrost$qu35 = _context20.sent;
+          _yield$poolBetrost$qu36 = (0, _slicedToArray2["default"])(_yield$poolBetrost$qu35, 1);
+          rows = _yield$poolBetrost$qu36[0];
           if (rows.length) {
-            _context19.next = 4;
+            _context20.next = 4;
             break;
           }
-          return _context19.abrupt("return", (0, _browser.error)(req, res, 404, "Código de barras no registrado en el catálogo"));
+          return _context20.abrupt("return", (0, _browser.error)(req, res, 404, "Código de barras no registrado en el catálogo"));
         case 4:
           catalogo = rows[0];
           talla = barcode.slice(-2);
           codigoProducto = "".concat(catalogo.referencia).concat(talla); // 2. Buscar el producto y su stock en Terminada Completo (25)
-          _context19.next = 5;
+          _context20.next = 5;
           return _mysql["default"].query("\n      SELECT\n        p.id_producto,\n        p.codigo,\n        p.caracteristica,\n        IFNULL(i.cantidad_disponible, 0) AS stock_disponible\n      FROM productos p\n      LEFT JOIN inventario i  \n        ON i.id_producto = p.id_producto\n       AND i.id_bodega = ?\n      WHERE p.codigo = ?\n        AND p.estado = 'ACTIVO'\n      LIMIT 1\n      ", [BODEGA_TERMINADA_COMPLETO, codigoProducto]);
         case 5:
-          _yield$poolBetrost$qu35 = _context19.sent;
-          _yield$poolBetrost$qu36 = (0, _slicedToArray2["default"])(_yield$poolBetrost$qu35, 1);
-          productoRows = _yield$poolBetrost$qu36[0];
+          _yield$poolBetrost$qu37 = _context20.sent;
+          _yield$poolBetrost$qu38 = (0, _slicedToArray2["default"])(_yield$poolBetrost$qu37, 1);
+          productoRows = _yield$poolBetrost$qu38[0];
           producto = productoRows[0] || null;
-          return _context19.abrupt("return", (0, _browser.success)(req, res, 200, {
+          return _context20.abrupt("return", (0, _browser.success)(req, res, 200, {
             codigo_barras: barcode,
             referencia: catalogo.referencia,
             sku: catalogo.sku,
@@ -1576,76 +1643,76 @@ var consultarConsumoLogistica = exports.consultarConsumoLogistica = /*#__PURE__*
             bodega_logistica: BODEGA_LOGISTICA
           }));
         case 6:
-          _context19.prev = 6;
-          _t20 = _context19["catch"](2);
-          console.error("Error consultando consumo logística:", _t20);
-          return _context19.abrupt("return", (0, _browser.error)(req, res, 500, "Error interno del servidor al consultar el producto"));
+          _context20.prev = 6;
+          _t21 = _context20["catch"](2);
+          console.error("Error consultando consumo logística:", _t21);
+          return _context20.abrupt("return", (0, _browser.error)(req, res, 500, "Error interno del servidor al consultar el producto"));
         case 7:
         case "end":
-          return _context19.stop();
+          return _context20.stop();
       }
-    }, _callee19, null, [[2, 6]]);
+    }, _callee20, null, [[2, 6]]);
   }));
-  return function consultarConsumoLogistica(_x42, _x43) {
-    return _ref22.apply(this, arguments);
+  return function consultarConsumoLogistica(_x44, _x45) {
+    return _ref23.apply(this, arguments);
   };
 }();
 var ejecutarConsumoLogistica = exports.ejecutarConsumoLogistica = /*#__PURE__*/function () {
-  var _ref23 = (0, _asyncToGenerator2["default"])(/*#__PURE__*/_regenerator["default"].mark(function _callee20(req, res) {
+  var _ref24 = (0, _asyncToGenerator2["default"])(/*#__PURE__*/_regenerator["default"].mark(function _callee21(req, res) {
     var _codigo_producto3, _observaciones2;
-    var _req$body0, codigo_producto, cantidad, observaciones, id_usuario, connection, _yield$connection$que24, _yield$connection$que25, _yield$connection$que26, usuario, _yield$connection$que27, _yield$connection$que28, _yield$connection$que29, producto, _yield$connection$que30, _yield$connection$que31, _yield$connection$que32, mensajeResult, mensaje, esError, _t21;
-    return _regenerator["default"].wrap(function (_context20) {
-      while (1) switch (_context20.prev = _context20.next) {
+    var _req$body1, codigo_producto, cantidad, observaciones, id_usuario, connection, _yield$connection$que24, _yield$connection$que25, _yield$connection$que26, usuario, _yield$connection$que27, _yield$connection$que28, _yield$connection$que29, producto, _yield$connection$que30, _yield$connection$que31, _yield$connection$que32, mensajeResult, mensaje, esError, _t22;
+    return _regenerator["default"].wrap(function (_context21) {
+      while (1) switch (_context21.prev = _context21.next) {
         case 0:
-          _req$body0 = req.body, codigo_producto = _req$body0.codigo_producto, cantidad = _req$body0.cantidad, observaciones = _req$body0.observaciones;
+          _req$body1 = req.body, codigo_producto = _req$body1.codigo_producto, cantidad = _req$body1.cantidad, observaciones = _req$body1.observaciones;
           codigo_producto = (_codigo_producto3 = codigo_producto) === null || _codigo_producto3 === void 0 ? void 0 : _codigo_producto3.trim();
           cantidad = Number.parseInt(cantidad, 10);
           id_usuario = Number.parseInt(req.user.id_usuario, 10);
           observaciones = ((_observaciones2 = observaciones) === null || _observaciones2 === void 0 ? void 0 : _observaciones2.trim()) || "";
           if (!(!codigo_producto || Number.isNaN(cantidad) || cantidad <= 0)) {
-            _context20.next = 1;
+            _context21.next = 1;
             break;
           }
-          return _context20.abrupt("return", (0, _browser.error)(req, res, 400, "Código del producto y cantidad son obligatorios"));
+          return _context21.abrupt("return", (0, _browser.error)(req, res, 400, "Código del producto y cantidad son obligatorios"));
         case 1:
-          _context20.prev = 1;
-          _context20.next = 2;
+          _context21.prev = 1;
+          _context21.next = 2;
           return (0, _identidad.conIdentidad)(_mysql["default"], req);
         case 2:
-          connection = _context20.sent;
-          _context20.next = 3;
+          connection = _context21.sent;
+          _context21.next = 3;
           return connection.query("SELECT id_usuario FROM usuarios WHERE id_usuario = ? LIMIT 1", [id_usuario]);
         case 3:
-          _yield$connection$que24 = _context20.sent;
+          _yield$connection$que24 = _context21.sent;
           _yield$connection$que25 = (0, _slicedToArray2["default"])(_yield$connection$que24, 1);
           _yield$connection$que26 = (0, _slicedToArray2["default"])(_yield$connection$que25[0], 1);
           usuario = _yield$connection$que26[0];
           if (usuario) {
-            _context20.next = 4;
+            _context21.next = 4;
             break;
           }
-          return _context20.abrupt("return", (0, _browser.error)(req, res, 404, "Usuario no existe"));
+          return _context21.abrupt("return", (0, _browser.error)(req, res, 404, "Usuario no existe"));
         case 4:
-          _context20.next = 5;
+          _context21.next = 5;
           return connection.query("\n      SELECT id_producto\n      FROM productos\n      WHERE codigo = ? AND estado = 'ACTIVO'\n      LIMIT 1\n      ", [codigo_producto]);
         case 5:
-          _yield$connection$que27 = _context20.sent;
+          _yield$connection$que27 = _context21.sent;
           _yield$connection$que28 = (0, _slicedToArray2["default"])(_yield$connection$que27, 1);
           _yield$connection$que29 = (0, _slicedToArray2["default"])(_yield$connection$que28[0], 1);
           producto = _yield$connection$que29[0];
           if (producto) {
-            _context20.next = 6;
+            _context21.next = 6;
             break;
           }
-          return _context20.abrupt("return", (0, _browser.error)(req, res, 404, "Producto no encontrado"));
+          return _context21.abrupt("return", (0, _browser.error)(req, res, 404, "Producto no encontrado"));
         case 6:
-          _context20.next = 7;
+          _context21.next = 7;
           return connection.query("CALL sp_consumo_logistica(?, ?, ?, ?, ?, ?, @mensaje);", [BODEGA_TERMINADA_COMPLETO, BODEGA_LOGISTICA, codigo_producto, cantidad, id_usuario, observaciones]);
         case 7:
-          _context20.next = 8;
+          _context21.next = 8;
           return connection.query("SELECT @mensaje AS mensaje;");
         case 8:
-          _yield$connection$que30 = _context20.sent;
+          _yield$connection$que30 = _context21.sent;
           _yield$connection$que31 = (0, _slicedToArray2["default"])(_yield$connection$que30, 1);
           _yield$connection$que32 = (0, _slicedToArray2["default"])(_yield$connection$que31[0], 1);
           mensajeResult = _yield$connection$que32[0];
@@ -1654,33 +1721,33 @@ var ejecutarConsumoLogistica = exports.ejecutarConsumoLogistica = /*#__PURE__*/f
             return mensaje.toLowerCase().includes(texto);
           });
           if (!esError) {
-            _context20.next = 9;
+            _context21.next = 9;
             break;
           }
-          return _context20.abrupt("return", (0, _browser.error)(req, res, 400, mensaje));
+          return _context21.abrupt("return", (0, _browser.error)(req, res, 400, mensaje));
         case 9:
-          return _context20.abrupt("return", (0, _browser.success)(req, res, 200, {
+          return _context21.abrupt("return", (0, _browser.success)(req, res, 200, {
             mensaje: mensaje,
             codigo_producto: codigo_producto,
             cantidad: cantidad
           }, "CONSUMO A LOGÍSTICA EXITOSO"));
         case 10:
-          _context20.prev = 10;
-          _t21 = _context20["catch"](1);
-          console.error("Error ejecutando consumo logística:", _t21);
-          return _context20.abrupt("return", (0, _browser.error)(req, res, 500, "Error interno del servidor al consumir a logística"));
+          _context21.prev = 10;
+          _t22 = _context21["catch"](1);
+          console.error("Error ejecutando consumo logística:", _t22);
+          return _context21.abrupt("return", (0, _browser.error)(req, res, 500, "Error interno del servidor al consumir a logística"));
         case 11:
-          _context20.prev = 11;
+          _context21.prev = 11;
           if (connection) connection.release();
-          return _context20.finish(11);
+          return _context21.finish(11);
         case 12:
         case "end":
-          return _context20.stop();
+          return _context21.stop();
       }
-    }, _callee20, null, [[1, 10, 11, 12]]);
+    }, _callee21, null, [[1, 10, 11, 12]]);
   }));
-  return function ejecutarConsumoLogistica(_x44, _x45) {
-    return _ref23.apply(this, arguments);
+  return function ejecutarConsumoLogistica(_x46, _x47) {
+    return _ref24.apply(this, arguments);
   };
 }();
 // ============================================================
@@ -1688,43 +1755,43 @@ var ejecutarConsumoLogistica = exports.ejecutarConsumoLogistica = /*#__PURE__*/f
 // ============================================================
 
 var consultarConsumoTerminadaProceso = exports.consultarConsumoTerminadaProceso = /*#__PURE__*/function () {
-  var _ref24 = (0, _asyncToGenerator2["default"])(/*#__PURE__*/_regenerator["default"].mark(function _callee21(req, res) {
-    var codigo_barras, barcode, _yield$poolBetrost$qu37, _yield$poolBetrost$qu38, rows, catalogo, talla, codigoProducto, _yield$poolBetrost$qu39, _yield$poolBetrost$qu40, productoRows, producto, _t22;
-    return _regenerator["default"].wrap(function (_context21) {
-      while (1) switch (_context21.prev = _context21.next) {
+  var _ref25 = (0, _asyncToGenerator2["default"])(/*#__PURE__*/_regenerator["default"].mark(function _callee22(req, res) {
+    var codigo_barras, barcode, _yield$poolBetrost$qu39, _yield$poolBetrost$qu40, rows, catalogo, talla, codigoProducto, _yield$poolBetrost$qu41, _yield$poolBetrost$qu42, productoRows, producto, _t23;
+    return _regenerator["default"].wrap(function (_context22) {
+      while (1) switch (_context22.prev = _context22.next) {
         case 0:
           codigo_barras = req.query.codigo_barras;
           if (!(!codigo_barras || typeof codigo_barras !== "string" || codigo_barras.trim() === "")) {
-            _context21.next = 1;
+            _context22.next = 1;
             break;
           }
-          return _context21.abrupt("return", (0, _browser.error)(req, res, 400, "El código de barras es obligatorio"));
+          return _context22.abrupt("return", (0, _browser.error)(req, res, 400, "El código de barras es obligatorio"));
         case 1:
           barcode = codigo_barras.trim();
-          _context21.prev = 2;
-          _context21.next = 3;
+          _context22.prev = 2;
+          _context22.next = 3;
           return _mysql["default"].query("\n      SELECT\n        id_catalogo,\n        referencia,\n        sku,\n        codigo_barras\n      FROM catalogo_productos\n      WHERE codigo_barras = ?\n      AND estado = 1\n      LIMIT 1\n      ", [barcode]);
         case 3:
-          _yield$poolBetrost$qu37 = _context21.sent;
-          _yield$poolBetrost$qu38 = (0, _slicedToArray2["default"])(_yield$poolBetrost$qu37, 1);
-          rows = _yield$poolBetrost$qu38[0];
+          _yield$poolBetrost$qu39 = _context22.sent;
+          _yield$poolBetrost$qu40 = (0, _slicedToArray2["default"])(_yield$poolBetrost$qu39, 1);
+          rows = _yield$poolBetrost$qu40[0];
           if (rows.length) {
-            _context21.next = 4;
+            _context22.next = 4;
             break;
           }
-          return _context21.abrupt("return", (0, _browser.error)(req, res, 404, "Código de barras no registrado en el catálogo"));
+          return _context22.abrupt("return", (0, _browser.error)(req, res, 404, "Código de barras no registrado en el catálogo"));
         case 4:
           catalogo = rows[0];
           talla = barcode.slice(-2);
           codigoProducto = "".concat(catalogo.referencia).concat(talla);
-          _context21.next = 5;
+          _context22.next = 5;
           return _mysql["default"].query("\n      SELECT\n        p.id_producto,\n        p.codigo,\n        p.caracteristica,\n        IFNULL(i.cantidad_disponible, 0) AS stock_disponible\n      FROM productos p\n      LEFT JOIN inventario i\n        ON i.id_producto = p.id_producto\n       AND i.id_bodega = ?\n      WHERE p.codigo = ?\n        AND p.estado = 'ACTIVO'\n      LIMIT 1\n      ", [BODEGA_TERMINADA_PROCESO, codigoProducto]);
         case 5:
-          _yield$poolBetrost$qu39 = _context21.sent;
-          _yield$poolBetrost$qu40 = (0, _slicedToArray2["default"])(_yield$poolBetrost$qu39, 1);
-          productoRows = _yield$poolBetrost$qu40[0];
+          _yield$poolBetrost$qu41 = _context22.sent;
+          _yield$poolBetrost$qu42 = (0, _slicedToArray2["default"])(_yield$poolBetrost$qu41, 1);
+          productoRows = _yield$poolBetrost$qu42[0];
           producto = productoRows[0] || null;
-          return _context21.abrupt("return", (0, _browser.success)(req, res, 200, {
+          return _context22.abrupt("return", (0, _browser.success)(req, res, 200, {
             codigo_barras: barcode,
             referencia: catalogo.referencia,
             sku: catalogo.sku,
@@ -1737,76 +1804,76 @@ var consultarConsumoTerminadaProceso = exports.consultarConsumoTerminadaProceso 
             bodega_terminada_completo: BODEGA_TERMINADA_COMPLETO
           }));
         case 6:
-          _context21.prev = 6;
-          _t22 = _context21["catch"](2);
-          console.error("Error consultando consumo terminada proceso:", _t22);
-          return _context21.abrupt("return", (0, _browser.error)(req, res, 500, "Error interno del servidor al consultar el producto"));
+          _context22.prev = 6;
+          _t23 = _context22["catch"](2);
+          console.error("Error consultando consumo terminada proceso:", _t23);
+          return _context22.abrupt("return", (0, _browser.error)(req, res, 500, "Error interno del servidor al consultar el producto"));
         case 7:
         case "end":
-          return _context21.stop();
+          return _context22.stop();
       }
-    }, _callee21, null, [[2, 6]]);
+    }, _callee22, null, [[2, 6]]);
   }));
-  return function consultarConsumoTerminadaProceso(_x46, _x47) {
-    return _ref24.apply(this, arguments);
+  return function consultarConsumoTerminadaProceso(_x48, _x49) {
+    return _ref25.apply(this, arguments);
   };
 }();
 var ejecutarConsumoTerminadaProceso = exports.ejecutarConsumoTerminadaProceso = /*#__PURE__*/function () {
-  var _ref25 = (0, _asyncToGenerator2["default"])(/*#__PURE__*/_regenerator["default"].mark(function _callee22(req, res) {
+  var _ref26 = (0, _asyncToGenerator2["default"])(/*#__PURE__*/_regenerator["default"].mark(function _callee23(req, res) {
     var _codigo_producto4, _observaciones3;
-    var _req$body1, codigo_producto, cantidad, observaciones, id_usuario, connection, _yield$connection$que33, _yield$connection$que34, _yield$connection$que35, usuario, _yield$connection$que36, _yield$connection$que37, _yield$connection$que38, producto, _yield$connection$que39, _yield$connection$que40, _yield$connection$que41, mensajeResult, mensaje, esError, _t23;
-    return _regenerator["default"].wrap(function (_context22) {
-      while (1) switch (_context22.prev = _context22.next) {
+    var _req$body10, codigo_producto, cantidad, observaciones, id_usuario, connection, _yield$connection$que33, _yield$connection$que34, _yield$connection$que35, usuario, _yield$connection$que36, _yield$connection$que37, _yield$connection$que38, producto, _yield$connection$que39, _yield$connection$que40, _yield$connection$que41, mensajeResult, mensaje, esError, _t24;
+    return _regenerator["default"].wrap(function (_context23) {
+      while (1) switch (_context23.prev = _context23.next) {
         case 0:
-          _req$body1 = req.body, codigo_producto = _req$body1.codigo_producto, cantidad = _req$body1.cantidad, observaciones = _req$body1.observaciones;
+          _req$body10 = req.body, codigo_producto = _req$body10.codigo_producto, cantidad = _req$body10.cantidad, observaciones = _req$body10.observaciones;
           codigo_producto = (_codigo_producto4 = codigo_producto) === null || _codigo_producto4 === void 0 ? void 0 : _codigo_producto4.trim();
           cantidad = Number.parseInt(cantidad, 10);
           id_usuario = Number.parseInt(req.user.id_usuario, 10);
           observaciones = ((_observaciones3 = observaciones) === null || _observaciones3 === void 0 ? void 0 : _observaciones3.trim()) || "";
           if (!(!codigo_producto || Number.isNaN(cantidad) || cantidad <= 0)) {
-            _context22.next = 1;
+            _context23.next = 1;
             break;
           }
-          return _context22.abrupt("return", (0, _browser.error)(req, res, 400, "Código del producto y cantidad son obligatorios"));
+          return _context23.abrupt("return", (0, _browser.error)(req, res, 400, "Código del producto y cantidad son obligatorios"));
         case 1:
-          _context22.prev = 1;
-          _context22.next = 2;
+          _context23.prev = 1;
+          _context23.next = 2;
           return (0, _identidad.conIdentidad)(_mysql["default"], req);
         case 2:
-          connection = _context22.sent;
-          _context22.next = 3;
+          connection = _context23.sent;
+          _context23.next = 3;
           return connection.query("SELECT id_usuario FROM usuarios WHERE id_usuario = ? LIMIT 1", [id_usuario]);
         case 3:
-          _yield$connection$que33 = _context22.sent;
+          _yield$connection$que33 = _context23.sent;
           _yield$connection$que34 = (0, _slicedToArray2["default"])(_yield$connection$que33, 1);
           _yield$connection$que35 = (0, _slicedToArray2["default"])(_yield$connection$que34[0], 1);
           usuario = _yield$connection$que35[0];
           if (usuario) {
-            _context22.next = 4;
+            _context23.next = 4;
             break;
           }
-          return _context22.abrupt("return", (0, _browser.error)(req, res, 404, "Usuario no existe"));
+          return _context23.abrupt("return", (0, _browser.error)(req, res, 404, "Usuario no existe"));
         case 4:
-          _context22.next = 5;
+          _context23.next = 5;
           return connection.query("\n      SELECT id_producto\n      FROM productos\n      WHERE codigo = ? AND estado = 'ACTIVO'\n      LIMIT 1\n      ", [codigo_producto]);
         case 5:
-          _yield$connection$que36 = _context22.sent;
+          _yield$connection$que36 = _context23.sent;
           _yield$connection$que37 = (0, _slicedToArray2["default"])(_yield$connection$que36, 1);
           _yield$connection$que38 = (0, _slicedToArray2["default"])(_yield$connection$que37[0], 1);
           producto = _yield$connection$que38[0];
           if (producto) {
-            _context22.next = 6;
+            _context23.next = 6;
             break;
           }
-          return _context22.abrupt("return", (0, _browser.error)(req, res, 404, "Producto no encontrado"));
+          return _context23.abrupt("return", (0, _browser.error)(req, res, 404, "Producto no encontrado"));
         case 6:
-          _context22.next = 7;
+          _context23.next = 7;
           return connection.query("CALL sp_consumo_terminada_proceso(?, ?, ?, ?, ?, ?, @mensaje);", [BODEGA_TERMINADA_PROCESO, BODEGA_TERMINADA_COMPLETO, codigo_producto, cantidad, id_usuario, observaciones]);
         case 7:
-          _context22.next = 8;
+          _context23.next = 8;
           return connection.query("SELECT @mensaje AS mensaje;");
         case 8:
-          _yield$connection$que39 = _context22.sent;
+          _yield$connection$que39 = _context23.sent;
           _yield$connection$que40 = (0, _slicedToArray2["default"])(_yield$connection$que39, 1);
           _yield$connection$que41 = (0, _slicedToArray2["default"])(_yield$connection$que40[0], 1);
           mensajeResult = _yield$connection$que41[0];
@@ -1815,69 +1882,69 @@ var ejecutarConsumoTerminadaProceso = exports.ejecutarConsumoTerminadaProceso = 
             return mensaje.toLowerCase().includes(texto);
           });
           if (!esError) {
-            _context22.next = 9;
+            _context23.next = 9;
             break;
           }
-          return _context22.abrupt("return", (0, _browser.error)(req, res, 400, mensaje));
+          return _context23.abrupt("return", (0, _browser.error)(req, res, 400, mensaje));
         case 9:
-          return _context22.abrupt("return", (0, _browser.success)(req, res, 200, {
+          return _context23.abrupt("return", (0, _browser.success)(req, res, 200, {
             mensaje: mensaje,
             codigo_producto: codigo_producto,
             cantidad: cantidad
           }, "CONSUMO A TERMINADA COMPLETO EXITOSO"));
         case 10:
-          _context22.prev = 10;
-          _t23 = _context22["catch"](1);
-          console.error("Error ejecutando consumo terminada proceso:", _t23);
-          return _context22.abrupt("return", (0, _browser.error)(req, res, 500, "Error interno del servidor al consumir a Terminada Completo"));
+          _context23.prev = 10;
+          _t24 = _context23["catch"](1);
+          console.error("Error ejecutando consumo terminada proceso:", _t24);
+          return _context23.abrupt("return", (0, _browser.error)(req, res, 500, "Error interno del servidor al consumir a Terminada Completo"));
         case 11:
-          _context22.prev = 11;
+          _context23.prev = 11;
           if (connection) connection.release();
-          return _context22.finish(11);
+          return _context23.finish(11);
         case 12:
         case "end":
-          return _context22.stop();
+          return _context23.stop();
       }
-    }, _callee22, null, [[1, 10, 11, 12]]);
+    }, _callee23, null, [[1, 10, 11, 12]]);
   }));
-  return function ejecutarConsumoTerminadaProceso(_x48, _x49) {
-    return _ref25.apply(this, arguments);
+  return function ejecutarConsumoTerminadaProceso(_x50, _x51) {
+    return _ref26.apply(this, arguments);
   };
 }();
 var activar_catalogo = exports.activar_catalogo = /*#__PURE__*/function () {
-  var _ref26 = (0, _asyncToGenerator2["default"])(/*#__PURE__*/_regenerator["default"].mark(function _callee23(req, res) {
-    var id_catalogo, _yield$poolBetrost$qu41, _yield$poolBetrost$qu42, previo, _yield$poolBetrost$qu43, _yield$poolBetrost$qu44, resultado, _t24;
-    return _regenerator["default"].wrap(function (_context23) {
-      while (1) switch (_context23.prev = _context23.next) {
+  var _ref27 = (0, _asyncToGenerator2["default"])(/*#__PURE__*/_regenerator["default"].mark(function _callee24(req, res) {
+    var id_catalogo, _yield$poolBetrost$qu43, _yield$poolBetrost$qu44, previo, _yield$poolBetrost$qu45, _yield$poolBetrost$qu46, resultado, _t25;
+    return _regenerator["default"].wrap(function (_context24) {
+      while (1) switch (_context24.prev = _context24.next) {
         case 0:
           id_catalogo = req.body.id_catalogo;
           if (id_catalogo) {
-            _context23.next = 1;
+            _context24.next = 1;
             break;
           }
-          return _context23.abrupt("return", res.status(400).json({
+          return _context24.abrupt("return", res.status(400).json({
             ok: false,
             mensaje: "El id_catalogo es obligatorio"
           }));
         case 1:
-          _context23.prev = 1;
-          _context23.next = 2;
+          _context24.prev = 1;
+          _context24.next = 2;
           return _mysql["default"].query("SELECT estado FROM catalogo_productos WHERE id_catalogo = ?", [id_catalogo]);
         case 2:
-          _yield$poolBetrost$qu41 = _context23.sent;
-          _yield$poolBetrost$qu42 = (0, _slicedToArray2["default"])(_yield$poolBetrost$qu41, 1);
-          previo = _yield$poolBetrost$qu42[0];
-          _context23.next = 3;
+          _yield$poolBetrost$qu43 = _context24.sent;
+          _yield$poolBetrost$qu44 = (0, _slicedToArray2["default"])(_yield$poolBetrost$qu43, 1);
+          previo = _yield$poolBetrost$qu44[0];
+          _context24.next = 3;
           return _mysql["default"].query("\nUPDATE catalogo_productos\n\nSET estado='ACTIVO'\n\nWHERE id_catalogo=?\n\n", [id_catalogo]);
         case 3:
-          _yield$poolBetrost$qu43 = _context23.sent;
-          _yield$poolBetrost$qu44 = (0, _slicedToArray2["default"])(_yield$poolBetrost$qu43, 1);
-          resultado = _yield$poolBetrost$qu44[0];
+          _yield$poolBetrost$qu45 = _context24.sent;
+          _yield$poolBetrost$qu46 = (0, _slicedToArray2["default"])(_yield$poolBetrost$qu45, 1);
+          resultado = _yield$poolBetrost$qu46[0];
           if (!previo[0]) {
-            _context23.next = 4;
+            _context24.next = 4;
             break;
           }
-          _context23.next = 4;
+          _context24.next = 4;
           return (0, _auditoria.registrarAuditoria)(_mysql["default"], req, {
             tabla: "catalogo_productos",
             accion: "CAMBIAR_ESTADO",
@@ -1888,25 +1955,25 @@ var activar_catalogo = exports.activar_catalogo = /*#__PURE__*/function () {
             }
           });
         case 4:
-          return _context23.abrupt("return", res.json({
+          return _context24.abrupt("return", res.json({
             ok: true,
             mensaje: "Producto activado"
           }));
         case 5:
-          _context23.prev = 5;
-          _t24 = _context23["catch"](1);
-          console.error(_t24);
-          return _context23.abrupt("return", res.status(500).json({
+          _context24.prev = 5;
+          _t25 = _context24["catch"](1);
+          console.error(_t25);
+          return _context24.abrupt("return", res.status(500).json({
             ok: false,
             mensaje: "Error activando producto"
           }));
         case 6:
         case "end":
-          return _context23.stop();
+          return _context24.stop();
       }
-    }, _callee23, null, [[1, 5]]);
+    }, _callee24, null, [[1, 5]]);
   }));
-  return function activar_catalogo(_x50, _x51) {
-    return _ref26.apply(this, arguments);
+  return function activar_catalogo(_x52, _x53) {
+    return _ref27.apply(this, arguments);
   };
 }();

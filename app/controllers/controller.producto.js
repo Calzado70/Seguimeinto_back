@@ -1084,6 +1084,58 @@ estado
   }
 };
 
+/**
+ * Consulta informativa de SKU para la pantalla de transferencia.
+ * Recibe { codigos: ["CI...", ...] } y devuelve solo los codigos que
+ * existen en sku_productos. El frontend muestra "NA" para el resto.
+ */
+const consultarSku = async (req, res) => {
+  try {
+    const entrada = Array.isArray(req.body?.codigos) ? req.body.codigos : [];
+
+    const codigos = [
+      ...new Set(
+        entrada
+          .map((codigo) => String(codigo ?? "").trim().toUpperCase())
+          .filter(Boolean),
+      ),
+    ];
+
+    if (!codigos.length) {
+      return res.status(400).json({
+        ok: false,
+        mensaje: "Códigos requeridos",
+      });
+    }
+
+    if (codigos.length > 500) {
+      return res.status(400).json({
+        ok: false,
+        mensaje: "Máximo 500 códigos por consulta",
+      });
+    }
+
+    const [rows] = await poolBetrost.query(
+      "SELECT codigo, sku FROM sku_productos WHERE codigo IN (?)",
+      [codigos],
+    );
+
+    const skus = {};
+    rows.forEach((fila) => {
+      skus[fila.codigo] = fila.sku;
+    });
+
+    return res.status(200).json({ ok: true, skus });
+  } catch (err) {
+    console.error(err);
+
+    return res.status(500).json({
+      ok: false,
+      mensaje: "Error interno",
+    });
+  }
+};
+
 const listar_catalogo = async (req, res) => {
   const { limit, offset } = normalizarPaginacion(req.query);
 
@@ -1757,6 +1809,7 @@ export {
   crear_producto,
   actualizarCaracteristica,
   consultarCodigo,
+  consultarSku,
   listar_catalogo,
   listar_productos,
   crear_catalogo,

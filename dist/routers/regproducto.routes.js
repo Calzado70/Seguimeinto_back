@@ -22,6 +22,8 @@ rutaProducto.get("/consumo-terminada-proceso", _oauth.verifyToken, _controller.c
 rutaProducto.post("/inicio", _oauth.verifyToken, _controller.iniciar_sesion_escaneo);
 rutaProducto.post("/agregar", _oauth.verifyToken, _controller.agregar_producto_sesion);
 rutaProducto.post("/crear", _oauth.verifyToken, _controller.crear_producto);
+// Consulta informativa de SKU (tabla sku_productos) para la transferencia.
+rutaProducto.post("/sku", _oauth.verifyToken, _controller.consultarSku);
 rutaProducto.post("/consultar", _controller.consultarCodigo);
 
 // METODO PUT -- ACTUALIZAR

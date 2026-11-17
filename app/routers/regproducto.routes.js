@@ -8,6 +8,7 @@ import { actualizarCaracteristica,
     consultar_movimientos, 
     consultar_stock, 
     consultarCodigo, 
+    consultarSku,
     consultarConsumoLogistica,
     consultarConsumoTerminadaProceso,
     crear_producto, 
@@ -39,6 +40,8 @@ rutaProducto.get("/consumo-terminada-proceso", verifyToken, consultarConsumoTerm
 rutaProducto.post("/inicio", verifyToken, iniciar_sesion_escaneo);
 rutaProducto.post("/agregar", verifyToken, agregar_producto_sesion);
 rutaProducto.post("/crear", verifyToken, crear_producto);
+// Consulta informativa de SKU (tabla sku_productos) para la transferencia.
+rutaProducto.post("/sku", verifyToken, consultarSku);
 rutaProducto.post("/consultar", consultarCodigo);
 
 
